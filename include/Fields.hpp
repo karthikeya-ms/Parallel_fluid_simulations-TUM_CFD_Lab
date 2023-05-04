@@ -85,6 +85,17 @@ class Fields {
 
     /// pressure matrix access and modify
     Matrix<double> &p_matrix();
+    
+    double d2udx2(int i_idx, int j_idx);
+    double d2udy2(int i_idx, int j_idx);
+    double du2dx(int i_idx, int j_idx, double gamma);
+    double duvdy(int i_idx, int j_idx, double gamma);
+    double duvdx(int i_idx, int j_idx, double gamma);
+    double dv2dy(int i_idx, int j_idx, double gamma);
+    double d2vdx2(int i_idx, int j_idx);
+    double d2vdy2(int i_idx, int j_idx);
+    double dpdx(int i_idx, int j_idx);
+    double dpdy(int i_idx, int j_idx);
 
   private:
     /// x-velocity matrix
