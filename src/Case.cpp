@@ -161,6 +161,16 @@ void Case::set_file_names(std::string file_name) {
     }
 }
 
+
+
+
+
+
+
+
+
+
+
 /**
  * This function is the main simulation loop. In the simulation loop, following steps are required
  * - Calculate and apply boundary conditions for all the boundaries in _boundaries container
@@ -187,7 +197,28 @@ void Case::simulate() {
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
+    
+    //First task.
+    for (auto boundary : _boundaries){
+    	boundary->apply(_field);
+    }
+    
+    //Second task.
+    
+    
+    
+    
+    
+    
+    
+    
 }
+
+
+
+
+
+
 
 void Case::output_vtk(int timestep, int my_rank) {
     // Create a new structured grid
