@@ -173,17 +173,17 @@ void Case::set_file_names(std::string file_name) {
 
 /**
  * This function is the main simulation loop. In the simulation loop, following steps are required
- * - Calculate and apply boundary conditions for all the boundaries in _boundaries container
+ * + Calculate and apply boundary conditions for all the boundaries in _boundaries container
  *   using apply() member function of Boundary class
- * - Calculate fluxes (F and G) using calculate_fluxes() member function of Fields class.
+ * + Calculate fluxes (F and G) using calculate_fluxes() member function of Fields class.
  *   Flux consists of diffusion and convection part, which are located in Discretization class
- * - Calculate right-hand-side of PPE using calculate_rs() member function of Fields class
- * - Iterate the pressure poisson equation until the residual becomes smaller than the desired tolerance
+ * + Calculate right-hand-side of PPE using calculate_rs() member function of Fields class
+ * + Iterate the pressure poisson equation until the residual becomes smaller than the desired tolerance
  *   or the maximum number of the iterations are performed using solve() member function of PressureSolver
- * - Update boundary conditions after each iteration of the SOR solver
- * - Calculate the velocities u and v using calculate_velocities() member function of Fields class
- * - Calculate the maximal timestep size for the next iteration using calculate_dt() member function of Fields class
- * - Write vtk files using output_vtk() function
+ * + Update boundary conditions after each iteration of the SOR solver
+ * + Calculate the velocities u and v using calculate_velocities() member function of Fields class
+ * + Calculate the maximal timestep size for the next iteration using calculate_dt() member function of Fields class
+ * + Write vtk files using output_vtk() function
  *
  * Please note that some classes such as PressureSolver, Boundary are abstract classes which means they only provide the
  * interface. No member functions should be defined in abstract classes. You need to define functions in inherited
@@ -198,22 +198,43 @@ void Case::simulate() {
     int timestep = 0;
     double output_counter = 0.0;
     
-    //First task.
-    for (auto boundary : _boundaries){
-    	boundary->apply(_field);
-    }
+    t = t + dt;
+    timestep = timestep + 1;
     
-    //Second task.
-    calculate_fluxes(_grid, _discretization::gamma); //Check how to access gamma value.
-    
-    //Third task.
-    
-    
-    
-    
-    
-    
-    
+    while (t < _t_end) {
+	    //First task.
+	    for (auto boundary : _boundaries){
+	    	boundary->apply(_field);
+	    }
+	    
+	    //Second task.
+	    _field.calculate_fluxes(_grid, _discretization::gamma); //Check how to access gamma value.
+	    
+	    //Third task.
+	    _field.calculate_rs(_grid);
+	    
+	    //Fourth and fifth tasks.
+	    int iter{0};
+	    double res = _pressure_solver->solve(_field, _grid, _boundaries);
+	    while (res > eps and iter < itermax){
+	    	res = _pressure_solver->solve(_field, _grid, _boundaries);
+	    	for (auto boundary : _boundaries){
+	    		boundary->apply(_field);
+	    	}
+	    	iter = iter + 1;
+	    }
+	    
+	    //Sixth task.
+	    _field.calculate_velocities(_grid);
+	    
+	    //Seventh task.
+	    dt = _field.calculate_dt(grid);
+	    
+	    //Eighth task.
+	    output_vtk(timestep);
+	    t = t + dt;
+    	    timestep = timestep + 1;
+    }   
 }
 
 
