@@ -15,10 +15,10 @@ void FixedWallBoundary::apply(Fields &field) {
 	
 		i_idx = cell->i();
 		j_idx = cell->j();
-        bool tw = cell.is_border(border_position::TOP);
-        bool rw = cell.is_border(border_position::RIGHT); 
-        bool bw = cell.is_border(border_position::BOTTOM);
-        bool lw = cell.is_border(border_position::LEFT);
+        bool tw = cell->is_border(border_position::TOP);
+        bool rw = cell->is_border(border_position::RIGHT); 
+        bool bw = cell->is_border(border_position::BOTTOM);
+        bool lw = cell->is_border(border_position::LEFT);
         bool con = true;
 
         switch(con){
@@ -71,10 +71,10 @@ void MovingWallBoundary::apply(Fields &field) {
 	
 		i_idx = cell->i();
 		j_idx = cell->j();
-        bool tw = cell.is_border(border_position::TOP);
-        bool rw = cell.is_border(border_position::RIGHT); 
-        bool bw = cell.is_border(border_position::BOTTOM);
-        bool lw = cell.is_border(border_position::LEFT);
+        bool tw = cell->is_border(border_position::TOP);
+        bool rw = cell->is_border(border_position::RIGHT); 
+        bool bw = cell->is_border(border_position::BOTTOM);
+        bool lw = cell->is_border(border_position::LEFT);
         bool con = true;
 		
 	    switch(con){
