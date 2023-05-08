@@ -13,8 +13,8 @@ void FixedWallBoundary::apply(Fields &field) {
 
 	for (const auto cell : _cells){
 	
-		i_idx = cell.i();
-		j_idx = cell.j();
+		i_idx = cell->i();
+		j_idx = cell->j();
         bool tw = cell.is_border(border_position::TOP);
         bool rw = cell.is_border(border_position::RIGHT); 
         bool bw = cell.is_border(border_position::BOTTOM);
@@ -69,8 +69,8 @@ void MovingWallBoundary::apply(Fields &field) {
 
 	for (const auto cell : _cells){
 	
-		i_idx = cell.i();
-		j_idx = cell.j();
+		i_idx = cell->i();
+		j_idx = cell->j();
         bool tw = cell.is_border(border_position::TOP);
         bool rw = cell.is_border(border_position::RIGHT); 
         bool bw = cell.is_border(border_position::BOTTOM);
