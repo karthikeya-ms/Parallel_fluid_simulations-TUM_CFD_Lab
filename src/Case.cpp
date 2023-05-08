@@ -193,8 +193,8 @@ void Case::simulate() {
     
     while (t < _t_end) {
 	    //First task.
-	    for (auto boundary : _boundaries){
-	    	boundary.apply(_field);
+	    for (auto const& boundary : _boundaries){
+	    	boundary->apply(_field);
 	    }
 	    
 	    //Second task.
@@ -206,9 +206,9 @@ void Case::simulate() {
 	    //Fourth and fifth tasks.
 	    int iter{0};
 	    double res = _pressure_solver->solve(_field, _grid, _boundaries);
-	    while (res > eps and iter < itermax){
+	    while (res > _tolerance and iter < _max_iter){
 	    	res = _pressure_solver->solve(_field, _grid, _boundaries);
-	    	for (auto boundary : _boundaries){
+	    	for (auto const& boundary : _boundaries){
 	    		boundary->apply(_field);
 	    	}
 	    	iter = iter + 1;
@@ -218,7 +218,7 @@ void Case::simulate() {
 	    _field.calculate_velocities(_grid);
 	    
 	    //Seventh task.
-	    dt = _field.calculate_dt(grid);
+	    dt = _field.calculate_dt(_grid);
 	    
 	    //Eighth task.
 	    output_vtk(timestep);
@@ -227,7 +227,7 @@ void Case::simulate() {
     }   
 }
 
-}
+
 
 void Case::output_vtk(int timestep, int my_rank) {
     // Create a new structured grid
