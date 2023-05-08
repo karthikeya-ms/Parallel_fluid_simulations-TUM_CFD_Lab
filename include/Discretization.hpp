@@ -88,6 +88,9 @@ class Discretization {
      *
      */
     static double interpolate(const Matrix<double> &A, int i, int j, int i_offset, int j_offset);
+    
+    //Added: Created getter for attribute gamma to pass as argument in second task.
+    double gamma(); 
 
   private:
     static double _dx;

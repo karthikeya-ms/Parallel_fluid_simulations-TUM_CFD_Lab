@@ -30,3 +30,6 @@ double Discretization::sor_helper(const Matrix<double> &P, int i, int j) {
 }
 
 double Discretization::interpolate(const Matrix<double> &A, int i, int j, int i_offset, int j_offset) {}
+
+//Added: Implementation of getter method for parameter gamma for second task.
+double Diescretization::gamma() { return _gamma; }

@@ -208,7 +208,7 @@ void Case::simulate() {
 	    }
 	    
 	    //Second task.
-	    _field.calculate_fluxes(_grid, _discretization::gamma); //Check how to access gamma value.
+	    _field.calculate_fluxes(_grid, _discretization.gamma());
 	    
 	    //Third task.
 	    _field.calculate_rs(_grid);
