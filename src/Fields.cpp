@@ -22,9 +22,16 @@ void Fields::calculate_fluxes(Grid &grid, double gamma) {
 	int j_idx{0};
 	
 
-	for (int i_idx = 1; i_idx < grid.imax(); i_idx++){
+	for (int i_idx = 1; i_idx < grid.imax()-1; i_idx++){
 		for (int j_idx = 1; j_idx < grid.jmax(); j_idx++){
 			f(i_idx, j_idx) = u(i_idx, j_idx) + _dt*(_nu*(d2udx2(i_idx, j_idx, grid) + d2udy2(i_idx, j_idx, grid)) - du2dx(i_idx, j_idx, gamma, grid) - duvdy(i_idx, j_idx, gamma, grid) + _gx);	
+			
+		}
+	}
+
+	for (int i_idx = 1; i_idx < grid.imax(); i_idx++){
+		for (int j_idx = 1; j_idx < grid.jmax()-1; j_idx++){
+			
 			g(i_idx, j_idx) = v(i_idx, j_idx) + _dt*(_nu*(d2vdx2(i_idx, j_idx, grid) + d2vdy2(i_idx, j_idx, grid)) - dv2dy(i_idx, j_idx, gamma, grid) - duvdx(i_idx, j_idx, gamma, grid) + _gy);
 		}
 	}
@@ -48,9 +55,15 @@ void Fields::calculate_rs(Grid &grid) {
 //Added: Function implemented for sixth task.
 void Fields::calculate_velocities(Grid &grid) {
 
-	for (int i_idx = 1; i_idx < grid.imax(); i_idx++){
+	for (int i_idx = 1; i_idx < grid.imax()-1; i_idx++){
 		for (int j_idx = 1; j_idx < grid.jmax(); j_idx++){
 			u(i_idx, j_idx) = f(i_idx, j_idx) - _dt*dpdx(i_idx, j_idx, grid);
+			
+		}
+	}
+	for (int i_idx = 1; i_idx < grid.imax(); i_idx++){
+		for (int j_idx = 1; j_idx < grid.jmax()-1; j_idx++){
+			
 			v(i_idx, j_idx) = g(i_idx, j_idx) - _dt*dpdy(i_idx, j_idx, grid);
 		}
 	}
