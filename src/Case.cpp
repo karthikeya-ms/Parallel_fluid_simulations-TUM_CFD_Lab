@@ -216,7 +216,7 @@ void Case::simulate() {
 	    //Fourth and fifth tasks.
 	    int iter{0};
 	    double res = _pressure_solver->solve(_field, _grid, _boundaries);
-	    while (res > eps && iter < itermax){
+	    while (res > _tolerance && iter < _max_iter){
 	    	res = _pressure_solver->solve(_field, _grid, _boundaries);
 	    	for (auto const& boundary : _boundaries){
 	    		boundary->apply(_field);
