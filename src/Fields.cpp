@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <cmath>
 
 Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI)
     : _nu(nu), _dt(dt), _tau(tau) {
@@ -23,8 +24,8 @@ void Fields::calculate_fluxes(Grid &grid, double gamma) {
 
 	for (int i_idx = 1; i_idx < grid.imax(); i_idx++){
 		for (int j_idx = 1; j_idx < grid.jmax(); j_idx++){
-			f(i_idx, j_idx) = u(i_idx, j_idx) + _dt*(_nu*(d2udx2(i_idx,j_idx) + d2udy2(i_idx, j_idx)) - du2dx(i_idx, j_idx, gamma) - duvdy(i_idx, j_idx, gamma) + _gx);	
-			g(i_idx, j_idx) = v(i_idx, j_idx) + _dt*(_nu*(d2vdx2(i_idx,j_idx) + d2vdy2(i_idx, j_idx)) - dv2dy(i_idx, j_idx, gamma) - duvdx(i_idx, j_idx, gamma) + _gy);
+			f(i_idx, j_idx) = u(i_idx, j_idx) + _dt*(_nu*(d2udx2(i_idx, j_idx, grid) + d2udy2(i_idx, j_idx, grid)) - du2dx(i_idx, j_idx, gamma, grid) - duvdy(i_idx, j_idx, gamma, grid) + _gx);	
+			g(i_idx, j_idx) = v(i_idx, j_idx) + _dt*(_nu*(d2vdx2(i_idx, j_idx, grid) + d2vdy2(i_idx, j_idx, grid)) - dv2dy(i_idx, j_idx, gamma, grid) - duvdx(i_idx, j_idx, gamma, grid) + _gy);
 		}
 	}
 
@@ -49,8 +50,8 @@ void Fields::calculate_velocities(Grid &grid) {
 
 	for (int i_idx = 1; i_idx < grid.imax(); i_idx++){
 		for (int j_idx = 1; j_idx < grid.jmax(); j_idx++){
-			u(i_idx, j_idx) = f(i_idx, j_idx) - _dt*dpdx(i_idx, j_idx);
-			v(i_idx, j_idx) = g(i_idx, j_idx) - _dt*dpdy(i_idx, j_idx);
+			u(i_idx, j_idx) = f(i_idx, j_idx) - _dt*dpdx(i_idx, j_idx, grid);
+			v(i_idx, j_idx) = g(i_idx, j_idx) - _dt*dpdy(i_idx, j_idx, grid);
 		}
 	}
 }
@@ -62,18 +63,23 @@ double Fields::calculate_dt(Grid &grid) {
 	std::vector<double> vector_umax;
 	std::vector<double> vector_vmax;
 	for (auto i_idx = 0; i_idx < _U.size(); i_idx++){
-		std::valarray<double> row_u(_U[i_idx].data(), _U[i_idx].size());
-		std::valarray<double> row_v(_V[i_idx].data(), _V[i_idx].size());
-		row_u = abs(row_u);
-		row_v = abs(row_v);
+		std::vector<double> row_u = _U.get_row(i_idx);
+		std::vector<double> row_v = _V.get_row(i_idx);
 		
-		vector_umax.append(*std::max_element(begin(row_u), end(row_u)));
-		vector_vmax.append(*std::max_element(begin(row_v), end(row_v)));
+		for(auto j_idx = 0; j_idx < row_u.size(); j_idx++){
+		row_u[j_idx] = abs(row_u[j_idx]);
+		row_v[j_idx] = abs(row_v[j_idx]);
+		}
+		
+		vector_umax.push_back(*std::max_element(std::begin(row_u), std::end(row_u)));
+		vector_vmax.push_back(*std::max_element(std::begin(row_v), std::end(row_v)));
 	}
 	double umax = *std::max_element(begin(vector_umax), end(vector_umax));
 	double vmax = *std::max_element(begin(vector_vmax), end(vector_vmax));
-
-	_dt = _tau*std::min(pow((1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0)), -1.0)/(2*_nu),  grid.dx()/umax, grid.dy/vmax);
+	
+         double _dta = std::min(grid.dx()/umax, grid.dy()/vmax);
+         double _dtb = pow((1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0)), -1.0)/(2*_nu);
+	_dt = _tau*std::min(_dta, _dtb);
 	return _dt; 
 }
 
@@ -90,55 +96,54 @@ double Fields::dt() const { return _dt; }
 
 
 //Added: Implementation of helper functions containing derivative terms to reduce cluttering in flux calculations for second task.
-double Fields::d2udx2(int i_idx, int j_idx){
+double Fields::d2udx2(int i_idx, int j_idx, Grid &grid){
 
-	return (u(i_idx + 1, j_idx) - 2*u(i_idx, j_idx) + u(idx - 1, j_idx))/(pow(grid.dx(), 2.0));
+	return (u(i_idx + 1, j_idx) - 2*u(i_idx, j_idx) + u(i_idx - 1, j_idx))/(pow(grid.dx(), 2.0));
 }
 
-double Fields::d2udy2(int i_idx, int j_idx){
+double Fields::d2udy2(int i_idx, int j_idx, Grid &grid){
 
-	return (u(i_idx, j_idx + 1) - 2*u(i_idx, j_idx) + u(idx, j_idx - 1))/pow(grid.dy(), 2.0);
+	return (u(i_idx, j_idx + 1) - 2*u(i_idx, j_idx) + u(i_idx, j_idx - 1))/pow(grid.dy(), 2.0);
 }
 
-double Fields::du2dx(int i_idx, int j_idx, double gamma){
+double Fields::du2dx(int i_idx, int j_idx, double gamma, Grid &grid){
 
-	return (1/grid.dx())*(pow((u(i_idx, j_idx) + u(idx + 1, j_idx))/2.0, 2.0) - pow((u(i_idx - 1, j_idx) + u(idx, j_idx))/2.0, 2.0)) + (gamma/grid.dx())*(abs(u(i_idx, j_idx) + u(i_idx + 1, j_idx))/2.0 * (u(i_idx, j_idx) - u(i_idx + 1, j_idx))/2.0 - abs(u(i_idx - 1, j_idx) + u(i_idx, j_idx))/2.0 *(u(i_idx - 1, j_idx) - u(i_idx, j_idx))/2.0);
+	return (1/grid.dx())*(pow((u(i_idx, j_idx) + u(i_idx + 1, j_idx))/2.0, 2.0) - pow((u(i_idx - 1, j_idx) + u(i_idx, j_idx))/2.0, 2.0)) + (gamma/grid.dx())*(abs(u(i_idx, j_idx) + u(i_idx + 1, j_idx))/2.0 * (u(i_idx, j_idx) - u(i_idx + 1, j_idx))/2.0 - abs(u(i_idx - 1, j_idx) + u(i_idx, j_idx))/2.0 *(u(i_idx - 1, j_idx) - u(i_idx, j_idx))/2.0);
 }
 
-double Fields::duvdy(int i_idx, int j_idx, double gamma){
+double Fields::duvdy(int i_idx, int j_idx, double gamma, Grid &grid){
 
  	return (1/grid.dy())*((v(i_idx, j_idx) + v(i_idx + 1, j_idx))/2.0 * (u(i_idx, j_idx) + u(i_idx, j_idx + 1))/2.0 - (v(i_idx, j_idx - 1) + v(i_idx + 1, j_idx - 1))/2.0 * (u(i_idx, j_idx - 1) + u(i_idx, j_idx))/2.0) +
 (gamma/grid.dy())*(abs(v(i_idx,j_idx) + v(i_idx + 1, j_idx))/2.0 * (u(i_idx, j_idx) - u(i_idx, j_idx + 1))/2.0 - abs(v(i_idx, j_idx - 1) + v(i_idx + 1, j_idx - 1))/2 * (u(i_idx, j_idx - 1) - u(i_idx, j_idx))/2.0);
 }
 
-double Fields::duvdx(int i_idx, int j_idx, double gamma){
+double Fields::duvdx(int i_idx, int j_idx, double gamma, Grid &grid){
 
 	return (1/grid.dx())*((u(i_idx,j_idx) + u(i_idx, j_idx + 1))/2.0 * (v(i_idx, j_idx) + v(i_idx + 1, j_idx))/2.0 - (u(i_idx - 1,j_idx) + u(i_idx - 1, j_idx + 1))/2.0 * (v(i_idx - 1, j_idx) + v(i_idx, j_idx))/2.0) +
 (gamma/grid.dy())*(abs(v(i_idx,j_idx) + v(i_idx + 1, j_idx))/2.0 * (u(i_idx, j_idx)-u(i_idx, j_idx + 1))/2.0 - abs(v(i_idx,j_idx - 1) + v(i_idx + 1, j_idx - 1))/2.0 * (u(i_idx, j_idx - 1) - u(i_idx, j_idx))/2.0);
 }
 
-double Fields::dv2dy(int i_idx, int j_idx, double gamma){
+double Fields::dv2dy(int i_idx, int j_idx, double gamma, Grid &grid){
 
-	return (1/grid.dy())*(pow((v(i_idx, j_idx) + v(i_idx, j_idx + 1))/2.0, 2.0)) - pow((v(i_idx, j_idx - 1) + v(i_idx, j_idx))/2.0, 2.0)) + 
-(gamma*1/grid.dy())*(abs(v(i_idx, j_idx) + v(i_idx , j_idx + 1))/2.0 * (v(i_idx, j_idx) - v(i_idx, j_idx + 1))/2.0 - abs(v(i_idx, j_idx - 1) + v(i_idx , j_idx))/2.0 * (v(i_idx, j_idx - 1) - v(i_idx, j_idx))/2.0);
+	return (1/grid.dy())*(pow((v(i_idx, j_idx) + v(i_idx, j_idx + 1))/2.0, 2.0) - pow((v(i_idx, j_idx - 1) + v(i_idx, j_idx))/2.0, 2.0)) + (gamma/grid.dy())*((abs(v(i_idx, j_idx) + v(i_idx, j_idx + 1))/2.0 * (v(i_idx, j_idx) - v(i_idx, j_idx + 1))/2.0) - (abs(v(i_idx, j_idx - 1) + v(i_idx, j_idx))/2.0 * (v(i_idx, j_idx - 1) - v(i_idx, j_idx))/2.0));
 }
 
-double Fields::d2vdx2(int i_idx, int j_idx){
+double Fields::d2vdx2(int i_idx, int j_idx, Grid &grid){
 
 	return (v(i_idx + 1, j_idx) - 2*v(i_idx, j_idx) + v(i_idx - 1, j_idx))/pow(grid.dx(), 2.0);
 }
 
-double Fields::d2vdy2(int i_idx, int j_idx){
+double Fields::d2vdy2(int i_idx, int j_idx, Grid &grid){
 
 	return (v(i_idx, j_idx + 1) - 2*v(i_idx, j_idx) + v(i_idx, j_idx - 1))/pow(grid.dy(), 2.0);
 }
 
-double Fields::dpdx(int i_idx, int j_idx){
+double Fields::dpdx(int i_idx, int j_idx, Grid &grid){
 
 	return (p(i_idx + 1, j_idx) - p(i_idx, j_idx))/grid.dx();
 }
 
-double Fields::dpdy(int i_idx, int j_idx){
+double Fields::dpdy(int i_idx, int j_idx, Grid &grid){
 
 	return (p(i_idx, j_idx + 1) - p(i_idx, j_idx))/grid.dy();
 }
