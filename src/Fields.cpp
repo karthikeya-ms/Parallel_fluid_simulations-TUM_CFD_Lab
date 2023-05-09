@@ -125,7 +125,7 @@ double Fields::duvdx(int i_idx, int j_idx, double gamma, Grid &grid){
 
 double Fields::dv2dy(int i_idx, int j_idx, double gamma, Grid &grid){
 
-	return (1/grid.dy())*(pow((v(i_idx, j_idx) + v(i_idx, j_idx + 1))/2.0, 2.0) - pow((v(i_idx, j_idx - 1) + v(i_idx, j_idx))/2.0, 2.0)) + (gamma/grid.dy())*((abs(v(i_idx, j_idx) + v(i_idx, j_idx + 1))/2.0 * (v(i_idx, j_idx) - v(i_idx, j_idx + 1))/2.0) - (abs(v(i_idx, j_idx - 1) + v(i_idx, j_idx))/2.0 * (v(i_idx, j_idx - 1) - v(i_idx, j_idx))/2.0));
+	return (1/grid.dy())*(pow((v(i_idx, j_idx) + v(i_idx, j_idx + 1))/2.0, 2.0) - pow((v(i_idx, j_idx - 1) + v(i_idx, j_idx))/2.0, 2.0)) + (gamma/grid.dy())*((abs(v(i_idx, j_idx) + v(i_idx, j_idx + 1))/2.0 * (v(i_idx, j_idx) - v(i_idx, j_idx + 1))/2.0) - (abs(v(i_idx, j_idx - 1) + v(i_idx, j_idx))/2.0 * (v(i_idx, j_idx - 1) - v(i_idx,j_idx))/2.0));
 }
 
 double Fields::d2vdx2(int i_idx, int j_idx, Grid &grid){
