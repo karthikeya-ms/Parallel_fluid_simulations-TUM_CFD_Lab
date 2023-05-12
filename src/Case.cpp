@@ -100,7 +100,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     _grid = Grid(_geom_name, domain);
     _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI);
 
-    _discretization = Discretization(domain.dx, domain.dy, gamma);
+    Discretization _discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
     _max_iter = itermax;
     _tolerance = eps;
@@ -195,35 +195,44 @@ void Case::simulate() {
 	    //First task.
 	    for (auto const& boundary : _boundaries){
 	    	boundary->apply(_field);
+	    	//std::cout << "Boundaries are applied\n";
 	    }
 	    
 	    //Second task.
 	    _field.calculate_fluxes(_grid, _discretization.gamma()); //Accessing Gamma value through a getter defined in Discretization.hpp
+	    //std::cout << "Fluxes are calculated\n";
 	    
 	    //Third task.
 	    _field.calculate_rs(_grid);
+	    //std::cout << "Calculate righthand size\n";
 	    
 	    //Fourth and fifth tasks.
 	    int iter{0};
 	    double res = _pressure_solver->solve(_field, _grid, _boundaries);
-	    while (res > _tolerance and iter < _max_iter){
+	    std::cout << "t = " << t << ", t_end = " << _t_end << ", res = " << res << ", tolerance = " << _tolerance << "\n"; 
+	    do {
 	    	res = _pressure_solver->solve(_field, _grid, _boundaries);
 	    	for (auto const& boundary : _boundaries){
 	    		boundary->apply(_field);
 	    	}
 	    	iter = iter + 1;
-	    }
+	    	std::cout << "iter = " << iter << ", max_iter = " << _max_iter << "\n";
+	    } while ((res > _tolerance) and (iter < _max_iter));
+	    //std::cout << "4th and 5th tasks\n";
 	    
 	    //Sixth task.
 	    _field.calculate_velocities(_grid);
+	    //std::cout << "Calculate velocities\n";
 	    
 	    //Seventh task.
 	    dt = _field.calculate_dt(_grid);
+	    //std::cout << "Calculate_dt\n";
 	    
 	    //Eighth task.
 	    output_vtk(timestep);
 	    t = t + dt;
     	    timestep = timestep + 1;
+    	    //std::cout << "Output\n";
     }   
 }
 
