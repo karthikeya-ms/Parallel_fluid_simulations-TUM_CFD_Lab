@@ -1,5 +1,6 @@
 #include "Case.hpp"
 #include "Enums.hpp"
+#include "Discretization.hpp"
 
 #include <algorithm>
 #ifdef GCC_VERSION_9_OR_HIGHER
@@ -99,7 +100,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     _grid = Grid(_geom_name, domain);
     _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI);
 
-    _discretization = Discretization(domain.dx, domain.dy, gamma);
+    Discretization _discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
     _max_iter = itermax;
     _tolerance = eps;
@@ -161,29 +162,19 @@ void Case::set_file_names(std::string file_name) {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
 /**
  * This function is the main simulation loop. In the simulation loop, following steps are required
- * + Calculate and apply boundary conditions for all the boundaries in _boundaries container
+ * - Calculate and apply boundary conditions for all the boundaries in _boundaries container
  *   using apply() member function of Boundary class
- * + Calculate fluxes (F and G) using calculate_fluxes() member function of Fields class.
+ * - Calculate fluxes (F and G) using calculate_fluxes() member function of Fields class.
  *   Flux consists of diffusion and convection part, which are located in Discretization class
- * + Calculate right-hand-side of PPE using calculate_rs() member function of Fields class
- * + Iterate the pressure poisson equation until the residual becomes smaller than the desired tolerance
+ * - Calculate right-hand-side of PPE using calculate_rs() member function of Fields class
+ * - Iterate the pressure poisson equation until the residual becomes smaller than the desired tolerance
  *   or the maximum number of the iterations are performed using solve() member function of PressureSolver
- * + Update boundary conditions after each iteration of the SOR solver
- * + Calculate the velocities u and v using calculate_velocities() member function of Fields class
- * + Calculate the maximal timestep size for the next iteration using calculate_dt() member function of Fields class
- * + Write vtk files using output_vtk() function
+ * - Update boundary conditions after each iteration of the SOR solver
+ * - Calculate the velocities u and v using calculate_velocities() member function of Fields class
+ * - Calculate the maximal timestep size for the next iteration using calculate_dt() member function of Fields class
+ * - Write vtk files using output_vtk() function
  *
  * Please note that some classes such as PressureSolver, Boundary are abstract classes which means they only provide the
  * interface. No member functions should be defined in abstract classes. You need to define functions in inherited
@@ -197,7 +188,6 @@ void Case::simulate() {
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
-    
     t = t + dt;
     timestep = timestep + 1;
     
@@ -205,23 +195,34 @@ void Case::simulate() {
 	    //First task.
 	    for (auto const& boundary : _boundaries){
 	    	boundary->apply(_field);
+	    	//std::cout << "Boundaries are applied\n";
 	    }
 	    
 	    //Second task.
-	    _field.calculate_fluxes(_grid, _discretization.gamma());
+	    _field.calculate_fluxes(_grid, _discretization);
+	    //std::cout << "Fluxes are calculated\n";
 	    
 	    //Third task.
 	    _field.calculate_rs(_grid);
+	    //std::cout << "Calculate righthand size\n";
 	    
 	    //Fourth and fifth tasks.
 	    int iter{0};
-	    double res = _pressure_solver->solve(_field, _grid, _boundaries);
-	    while (res > _tolerance && iter < _max_iter){
+	    double res = _pressure_solver->solve(_field, _grid, _boundaries); 
+	    while ((res > _tolerance) and (iter < _max_iter)) {
 	    	res = _pressure_solver->solve(_field, _grid, _boundaries);
 	    	for (auto const& boundary : _boundaries){
 	    		boundary->apply(_field);
 	    	}
 	    	iter = iter + 1;
+	    }
+	    
+	    if (t == int(t)){
+	    	std::cout << "integer number" << '\n';
+	    	if (int(t) % 5 == 0){
+		    std::cout << "SOR loop (for calculating pressure at the next time step from the Poisson equation) results:" << '\n';
+		    std::cout << "t = " << t << ", res = " << res << ", tolerance = " << _tolerance << ", iter = " << iter << ", max iter = " << _max_iter <<  '\n';
+		}
 	    }
 	    
 	    //Sixth task.
@@ -236,10 +237,6 @@ void Case::simulate() {
     	    timestep = timestep + 1;
     }   
 }
-
-
-
-
 
 
 

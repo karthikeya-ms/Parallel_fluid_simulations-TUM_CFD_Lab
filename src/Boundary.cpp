@@ -18,7 +18,7 @@ void FixedWallBoundary::apply(Fields &field) {
 		i_idx = cell->i();
 		j_idx = cell->j();
 		
-		if (cell->is_border(border_position::TOP) == true) {
+		if (cell->is_border(border_position::TOP) == true){
 			field.p(i_idx, j_idx) = field.p(i_idx, j_idx + 1);
 			field.u(i_idx, j_idx) = -field.u(i_idx, j_idx + 1);
 			field.v(i_idx, j_idx) = 0; 

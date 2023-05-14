@@ -34,7 +34,7 @@ class Fields {
      * @param[in] grid in which the fluxes are calculated
      *
      */
-    void calculate_fluxes(Grid &grid, double gamma);
+    void calculate_fluxes(Grid &grid, Discretization &discretization);
 
     /**
      * @brief Right hand side calculations using the fluxes for the pressure
@@ -85,18 +85,11 @@ class Fields {
 
     /// pressure matrix access and modify
     Matrix<double> &p_matrix();
-    
-    //Added: Headers of helper functions containing derivative terms to reduce cluttering in flux calculations for second task.
-    double d2udx2(int i_idx, int j_idx, double dx);
-    double d2udy2(int i_idx, int j_idx, double dy);
-    double du2dx(int i_idx, int j_idx, double dx, double gamma);
-    double duvdy(int i_idx, int j_idx, double dy, double gamma);
-    double duvdx(int i_idx, int j_idx, double dx, double dy, double gamma);
-    double dv2dy(int i_idx, int j_idx, double dy, double gamma);
-    double d2vdx2(int i_idx, int j_idx, double dx);
-    double d2vdy2(int i_idx, int j_idx, double dy);
-    double dpdx(int i_idx, int j_idx, double dx);
-    double dpdy(int i_idx, int j_idx, double dy);
+
+    //Added: Headers of helper functions containing derivative terms to compute pressure derivatives.
+    double dPdx(int i_idx, int j_idx, Grid &grid);
+    double dPdy(int i_idx, int j_idx, Grid &grid);
+
 
   private:
     /// x-velocity matrix
@@ -122,4 +115,6 @@ class Fields {
     double _dt;
     /// adaptive timestep coefficient
     double _tau;
+    int _imax;
+    int _jmax;
 };
