@@ -15,6 +15,7 @@ enum class border_position {
     BOTTOM,
     LEFT,
     RIGHT,
+    LAST
 };
 
 namespace border {
