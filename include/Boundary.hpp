@@ -59,9 +59,10 @@ class MovingWallBoundary : public Boundary {
 
 class InflowBoundary : public Boundary {
   public:
+    InflowBoundary(std::vector<Cell *> cells);
     InflowBoundary(std::vector<Cell *> cells, double UIN, double VIN);
     virtual ~InflowBoundary() = default;
-    virtual void apply(Fields &field);
+    virtual void apply(Fields &field, bool energy_eq);
 
   private:
     std::vector<Cell *> _cells;
@@ -74,7 +75,7 @@ class OutflowBoundary : public Boundary {
   public:
     OutflowBoundary(std::vector<Cell *> cells);
     virtual ~OutflowBoundary() = default;
-    virtual void apply(Fields &field);
+    virtual void apply(Fields &field, bool energy_eq);
 
   private:
     std::vector<Cell *> _cells;

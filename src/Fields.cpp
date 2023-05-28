@@ -83,7 +83,7 @@ void Fields::calculate_temperatures(Grid &grid, Discretization &discretization){
 }
 
 //Added: Function implemented for seventh task.
-double Fields::calculate_dt(Grid &grid, double energy_eq) { 
+double Fields::calculate_dt(Grid &grid, bool energy_eq) { 
 
 	int i_idx{0};
 	int j_idx{0};

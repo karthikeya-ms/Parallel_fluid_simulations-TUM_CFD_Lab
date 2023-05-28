@@ -71,7 +71,7 @@ class Fields {
      * @param[in] grid in which the calculations are done
      *
      */
-    double calculate_dt(Grid &grid);
+    double calculate_dt(Grid &grid, bool energy_eq);
 
     /// x-velocity index based access and modify
     double &u(int i, int j);
