@@ -28,7 +28,7 @@ namespace filesystem = std::experimental::filesystem;
 #include <vtkStructuredGridWriter.h>
 #include <vtkTuple.h>
 
-Case::Case(std::string file_name) {
+Case::Case(std::string file_name, int argn, char **args) {
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
     std::ifstream file(file_name);
@@ -55,6 +55,7 @@ Case::Case(std::string file_name) {
     double beta{0};    /* thermal expansion coefficient */
     double alpha{0};   /* thermal diffusivity */
     int num_walls{0};  /* number of different wall classes (wall id ranging from 3-7) */
+    double temps[num_walls]; /* Vector of temperatures of the different walls */
     std::string geo_file{"NONE"};     /* String with the name of the geometry file loaded */
     
 
@@ -92,7 +93,7 @@ Case::Case(std::string file_name) {
 	        if (var == "alpha") file >> alpha;
 	        if (var == "num_walls") file >> num_walls;
 	        if (num_walls != 0){
-	        	double temps[num_walls]; /* Vector of temperatures of the different walls */
+	        	 
 			for (int i = 3; i < 3 + num_walls; i++){
 				if (var == "wall_temp_" + std::to_string(i)) file >> temps[i - 3];
 			}
@@ -133,7 +134,6 @@ Case::Case(std::string file_name) {
     
     _grid = Grid(_geom_name, domain);
     _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, UIN, VIN, PI, TI, alpha, beta);
-
     Discretization _discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
     _max_iter = itermax;
@@ -150,7 +150,7 @@ Case::Case(std::string file_name) {
     if (not _grid.inflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells()));
     }
-    if (not _grid.outflow_cells().empty()) { //TODO
+    if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
     }
 }
@@ -233,7 +233,7 @@ void Case::simulate() {
     
     while (t < _t_end) {
     
-	    dt = _field.calculate_dt(_grid);
+	    dt = _field.calculate_dt(_grid, _energy_eq);
 	    std::cout << "dt is calculated\n";
 	    
 	    for (auto const& boundary : _boundaries){
@@ -288,6 +288,8 @@ void Case::output_vtk(int timestep, int my_rank) {
 
     double dx = _grid.dx();
     double dy = _grid.dy();
+    int i_max = _grid.imax();
+    int j_max = _grid.jmax();
 
     double x = _grid.domain().imin * dx;
     double y = _grid.domain().jmin * dy;
@@ -320,10 +322,12 @@ void Case::output_vtk(int timestep, int my_rank) {
     Velocity->SetName("velocity");
     Velocity->SetNumberOfComponents(3);
     
+    // Temperature Array for cell data
+    vtkSmartPointer<vtkDoubleArray> Temperature = vtkSmartPointer<vtkDoubleArray>::New();
     if (_energy_eq){
-	    vtkSmartPointer<vtkDoubleArray> Temperature = vtkSmartPointer<vtkDoubleArray>::New();
-	    Velocity->SetName("temperature");
-	    Velocity->SetNumberOfComponents(1);
+	    
+	    Temperature->SetName("temperature");
+	    Temperature->SetNumberOfComponents(1);
     }
 
     // Temp Velocity
@@ -343,13 +347,13 @@ void Case::output_vtk(int timestep, int my_rank) {
             vel[1] = (_field.v(i, j - 1) + _field.v(i, j)) * 0.5;
             Velocity->InsertNextTuple(vel);
             
-            if (_grid.cell(i, j).id() != 0){
-	        Pressure->BlankCell((i + j*(i_max + 1)));
-            	Velocity->BlankCell((i + j*(i_max + 1)));
-            	if (_energy_eq){
-            		Temperature->BlankCell((i + j*(i_max + 1)));
-            	}
-            }
+            //if (_grid.cell(i, j).wall_id() != 0){
+	       // Pressure->BlankCell((i + j*(i_max + 1)));
+            	//Velocity->BlankCell((i + j*(i_max + 1)));
+            	//if (_energy_eq){
+            	//	Temperature->BlankCell((i + j*(i_max + 1)));
+            	//}
+            //}
         }
     }
 
