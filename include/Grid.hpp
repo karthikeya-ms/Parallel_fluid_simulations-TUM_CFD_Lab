@@ -81,7 +81,7 @@ class Grid {
      *
      * @param[out] vector of outflow cells
      */
-    const std::vector<Cell *> &outflow_wall_cells() const;
+    const std::vector<Cell *> &outflow_cells() const;
 
   private:
     /**@brief Default lid driven cavity case generator
