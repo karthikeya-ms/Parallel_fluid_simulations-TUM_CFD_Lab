@@ -30,32 +30,40 @@ int main(int argn, char **args) {
     std::string file_name{cases[idx_option]};
     */
     
-    std::vector<std::string> cases = {"ChannelWithBFS", "ChannelWithObstacle", "FluidTrap", "LidDrivenCavity", "NaturalConvection", "RayleighBenard"};
-    std::string file_name;
-    if (argn > 1) {
-    	for (int i = 1; i < argn; ++i){
-		if (std::find(cases.begin(), cases.end(), args[i]) != cases.end()) {
-			std::cout << "Initializing simulation for case: " << args[i] << '\n';
-			file_name = "../example_cases/";
-			file_name = file_name + args[i] + "/" + args[i] + ".dat";
-			Case problem(file_name);
-			std::cout << "Created new case. Starting Simulation:\n";
-			problem.simulate();
-		}
-		else {
-			std::cout << "Error: Invalid input file name. " << "'" << args[i] << "'" << " is not a valid simulation case." << '\n';
-			std::cout << "Please provide one or more of the following option(s) as parameter(s) to simulate a given case and compile again accordingly:" << '\n';
-			for (int i = 0; i < cases.size() - 1; ++i){
-				std::cout << "- " << cases[i] << "." << '\n';
-			}
-			std::cout << "- " << cases[cases.size() - 1] << "." << '\n';
-			std::cout << "For more information on how to run the code check READM.md file." << std::endl;  
-		}
-        }
+    //std::vector<std::string> cases = {"ChannelWithBFS", "ChannelWithObstacle", "FluidTrap", "LidDrivenCavity", "NaturalConvection", "RayleighBenard"};
+    //std::string file_name;
+    //if (argn > 1) {
+    	//for (int i = 1; i < argn; ++i){
+		//if (std::find(cases.begin(), cases.end(), args[i]) != cases.end()) {
+		//	std::cout << "Initializing simulation for case: " << args[i] << '\n';
+		//	file_name = "../example_cases/";
+		//	file_name = file_name + args[i] + "/" + args[i] + ".dat";
+		//	Case problem(file_name);
+		//	std::cout << "Created new case. Starting Simulation:\n";
+		//	problem.simulate();
+		//}
+		//else {
+			//std::cout << "Error: Invalid input file name. " << "'" << args[i] << "'" << " is not a valid simulation case." << '\n';
+			//std::cout << "Please provide one or more of the following option(s) as parameter(s) to simulate a given case and compile again accordingly:" << '\n';
+			//for (int i = 0; i < cases.size() - 1; ++i){
+			//	std::cout << "- " << cases[i] << "." << '\n';
+			//}
+			//std::cout << "- " << cases[cases.size() - 1] << "." << '\n';
+			//std::cout << "For more information on how to run the code check READM.md file." << std::endl;  
+		//}
+      //  }
 
-    } else {
-        std::cout << "Error: No input file is provided to fluidchen." << std::endl;
-        std::cout << "Example usage: /path/to/fluidchen case_name" << std::endl;
-    }
+    //} 
+    
+    if (argn > 1) {
+        std::string file_name{args[1]};
+        Case problem(file_name, argn, args);
+        problem.simulate();
+         }
+
+    else {
+   	 std::cout << "Error: No input file is provided to fluidchen." << std::endl;
+         std::cout << "Example usage: /path/to/fluidchen case_name" << std::endl;
+         }
     
 }
