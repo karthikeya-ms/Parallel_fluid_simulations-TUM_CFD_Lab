@@ -38,8 +38,8 @@ void Fields::calculate_fluxes(Grid &grid, Discretization &discretization, bool e
 			hydro_term_x = _dt*_gx;
 			hydro_term_y = _dt*_gy;
 		}
-		f(i_idx, j_idx) = u(i_idx, j_idx) + _dt*(_nu*discretization.diffusion(_U, i_idx, j_idx) + discretization.convection_U(_U, _V, i_idx, j_idx)) + hydro_term_x;
-		g(i_idx, j_idx) = v(i_idx, j_idx) + _dt*(_nu*discretization.diffusion(_V, i_idx, j_idx) + discretization.convection_V(_U, _V, i_idx, j_idx)) + hydro_term_y;
+		_F(i_idx, j_idx) = _U(i_idx, j_idx) + _dt*(_nu*discretization.diffusion(_U, i_idx, j_idx) + discretization.convection_U(_U, _V, i_idx, j_idx)) + hydro_term_x;
+		_G(i_idx, j_idx) = _V(i_idx, j_idx) + _dt*(_nu*discretization.diffusion(_V, i_idx, j_idx) + discretization.convection_V(_U, _V, i_idx, j_idx)) + hydro_term_y;
 	}
 	
 }
@@ -52,7 +52,7 @@ void Fields::calculate_rs(Grid &grid) {
 	for (const auto currentCell : grid.fluid_cells()){
 		i_idx = currentCell->i();
 		j_idx = currentCell->j();
-		rs(i_idx, j_idx) = ((f(i_idx, j_idx) - f(i_idx - 1, j_idx))/grid.dx() + (g(i_idx, j_idx) - g(i_idx, j_idx - 1))/grid.dy())/_dt;	
+		_RS(i_idx, j_idx) = (1/_dt) * ((_F(i_idx, j_idx) - _F(i_idx - 1, j_idx))/grid.dx() + (_G(i_idx, j_idx) - _G(i_idx, j_idx - 1))/grid.dy());	
 	}
 }
 
@@ -64,8 +64,8 @@ void Fields::calculate_velocities(Grid &grid) {
 	for (const auto currentCell : grid.fluid_cells()){
 		i_idx = currentCell->i();
 		j_idx = currentCell->j();
-		u(i_idx, j_idx) = f(i_idx, j_idx) - _dt*dPdx(i_idx, j_idx, grid);
-		v(i_idx, j_idx) = g(i_idx, j_idx) - _dt*dPdy(i_idx, j_idx, grid);
+		_U(i_idx, j_idx) = _F(i_idx, j_idx) - _dt*dPdx(i_idx, j_idx, grid);
+		_V(i_idx, j_idx) = _G(i_idx, j_idx) - _dt*dPdy(i_idx, j_idx, grid);
 	}
 }
 
@@ -85,29 +85,35 @@ void Fields::calculate_temperatures(Grid &grid, Discretization &discretization){
 //Added: Function implemented for seventh task.
 double Fields::calculate_dt(Grid &grid, bool energy_eq) { 
 
-	int i_idx{0};
-	int j_idx{0};
+	//int i_idx{0};
+	//int j_idx{0};
 	double max_u{0};
 	double max_v{0};
-	for (const auto currentCell : grid.fluid_cells()){
-		i_idx = currentCell->i();
-		j_idx = currentCell->j();
+	//for (const auto currentCell : grid.fluid_cells()){
+	//	i_idx = currentCell->i();
+	//	j_idx = currentCell->j();
 		
-		if (abs(_U(i_idx, j_idx)) > max_u){
-			max_u = abs(_U(i_idx, j_idx));
-		}
-		if (abs(_V(i_idx, j_idx)) > max_v){
-			max_v = abs(_V(i_idx, j_idx));
-		}
-	}
+	//	if (abs(_U(i_idx, j_idx)) > max_u){
+	//		max_u = abs(_U(i_idx, j_idx));
+	//	}
+	//	if (abs(_V(i_idx, j_idx)) > max_v){
+	//		max_v = abs(_V(i_idx, j_idx));
+	//	}
+	//}
 	
-	double dta = std::min(grid.dx()/max_u, grid.dy()/max_v);
+	max_u = std::abs(*std::max_element(_U.data() + 1, _U.data() + grid.fluid_cells().size() + 1));
+    max_v = std::abs(*std::max_element(_V.data() + 1, _V.data() + grid.fluid_cells().size() + 1));
+	
+	double dta = std::min(grid.dx()/abs(max_u), grid.dy()/abs(max_v));
 	double dtb = pow((1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0)), -1.0)/(2*_nu);
-	double dt = _dt*std::min(dta, dtb);
+	double dt = _tau*std::min(dta, dtb);
+	std::cout<<"dta = "<<dta<<std::endl;
+	std::cout<<"dtb = "<<dtb<<std::endl;
 	
 	if (energy_eq == true){
-		double dtc = _dt*pow((1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0)), -1.0)/(2*_alpha);
+		double dtc = pow((1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0)), -1.0)/(2*_alpha);
 		dt = std::min(dt, dtc);
+		std::cout<<"dtc = "<<dtc<<std::endl;
 	}
 	_dt = dt;
 	return _dt; 
@@ -126,9 +132,9 @@ Matrix<double> &Fields::p_matrix() { return _P; }
 double Fields::dt() const { return _dt; }
 
 double Fields::dPdx(int i_idx, int j_idx, Grid &grid){
-	return (p(i_idx + 1, j_idx) - p(i_idx, j_idx))/grid.dx();
+	return (1/grid.dx()) * (_P(i_idx + 1, j_idx) - _P(i_idx, j_idx));
 }
 
 double Fields::dPdy(int i_idx, int j_idx, Grid &grid){
-	return (p(i_idx, j_idx + 1) - p(i_idx, j_idx))/grid.dy();
+	return (1/grid.dy()) * (_P(i_idx, j_idx + 1) - _P(i_idx, j_idx));
 }
