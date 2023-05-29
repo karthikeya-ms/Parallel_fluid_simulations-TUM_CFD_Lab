@@ -31,8 +31,8 @@ void Fields::calculate_fluxes(Grid &grid, Discretization &discretization, bool e
 		
 		//Add the necessary corrections coming from the Boussinesq approximation to the momentum equations (already using the new temperatures).
 		if (energy_eq == true){
-			hydro_term_x = _beta*(_dt/2.0)*(t(i_idx, j_idx) + t(i_idx + 1, j_idx))*_gx;
-			hydro_term_y = _beta*(_dt/2.0)*(t(i_idx, j_idx) + t(i_idx, j_idx + 1))*_gy;
+			hydro_term_x = _beta*(_dt/2.0)*(_T(i_idx, j_idx) + _T(i_idx + 1, j_idx))*_gx;
+			hydro_term_y = _beta*(_dt/2.0)*(_T(i_idx, j_idx) + _T(i_idx, j_idx + 1))*_gy;
 		}	
 		else {
 			hydro_term_x = _dt*_gx;
@@ -85,24 +85,28 @@ void Fields::calculate_temperatures(Grid &grid, Discretization &discretization){
 //Added: Function implemented for seventh task.
 double Fields::calculate_dt(Grid &grid, bool energy_eq) { 
 
-	//int i_idx{0};
-	//int j_idx{0};
+	int i_idx{0};
+	int j_idx{0};
 	double max_u{0};
 	double max_v{0};
-	//for (const auto currentCell : grid.fluid_cells()){
-	//	i_idx = currentCell->i();
-	//	j_idx = currentCell->j();
+	for (const auto currentCell : grid.fluid_cells()){
+		i_idx = currentCell->i();
+		j_idx = currentCell->j();
 		
-	//	if (abs(_U(i_idx, j_idx)) > max_u){
-	//		max_u = abs(_U(i_idx, j_idx));
-	//	}
-	//	if (abs(_V(i_idx, j_idx)) > max_v){
-	//		max_v = abs(_V(i_idx, j_idx));
-	//	}
-	//}
+		if (abs(_U(i_idx, j_idx)) > max_u){
+			max_u = abs(_U(i_idx, j_idx));
+		}
+		if (abs(_V(i_idx, j_idx)) > max_v){
+			max_v = abs(_V(i_idx, j_idx));
+		}
+	}
 	
-	max_u = std::abs(*std::max_element(_U.data() + 1, _U.data() + grid.fluid_cells().size() + 1));
-    max_v = std::abs(*std::max_element(_V.data() + 1, _V.data() + grid.fluid_cells().size() + 1));
+	//max_u = std::abs(*std::max_element(_U.data() + 1, _U.data() + grid.fluid_cells().size() + 1));
+       // max_v = std::abs(*std::max_element(_V.data() + 1, _V.data() + grid.fluid_cells().size() + 1));
+        std::cout<<"umax = "<<max_u<<std::endl;
+        std::cout<<"vmax = "<<max_v<<std::endl;
+        std::cout<<"dx = "<<grid.dx()<<std::endl;
+        std::cout<<"dy = "<<grid.dy()<<std::endl;
 	
 	double dta = std::min(grid.dx()/abs(max_u), grid.dy()/abs(max_v));
 	double dtb = pow((1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0)), -1.0)/(2*_nu);
