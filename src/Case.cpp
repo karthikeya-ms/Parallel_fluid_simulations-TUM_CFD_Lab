@@ -28,7 +28,8 @@ namespace filesystem = std::experimental::filesystem;
 #include <vtkStructuredGridWriter.h>
 #include <vtkTuple.h>
 
-Case::Case(std::string file_name, int argn, char **args) {
+//Case::Case(std::string file_name, int argn, char **args) {
+Case::Case(std::string file_name) {
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
     std::ifstream file(file_name);
@@ -54,7 +55,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     double TI{0};      /* initial temperature */
     double beta{0};    /* thermal expansion coefficient */
     double alpha{0};   /* thermal diffusivity */
-    int num_walls{0};  /* number of different wall classes (wall id ranging from 3-7) */
+    int num_walls{6};  /* number of different wall classes (wall id ranging from 3-7). Initialized with arbitrary value to allocate heap memory for temps variable */
     double temps[num_walls]; /* Vector of temperatures of the different walls */
     std::string geo_file{"NONE"};     /* String with the name of the geometry file loaded */
     
@@ -92,7 +93,7 @@ Case::Case(std::string file_name, int argn, char **args) {
 	        if (var == "beta") file >> beta;
 	        if (var == "alpha") file >> alpha;
 	        if (var == "num_walls") file >> num_walls;
-	        if (num_walls != 0){
+	        if ((num_walls != 0) and (num_walls != 6)){
 	        	 
 			for (int i = 3; i < 3 + num_walls; i++){
 				if (var == "wall_temp_" + std::to_string(i)) file >> temps[i - 3];
@@ -148,7 +149,7 @@ Case::Case(std::string file_name, int argn, char **args) {
         _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp));
     }
     if (not _grid.inflow_cells().empty()) {
-        _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells()));
+        _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN));
     }
     if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
@@ -228,28 +229,28 @@ void Case::simulate() {
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
-    t = t + dt;
-    timestep = timestep + 1;
     
     while (t < _t_end) {
     
 	    dt = _field.calculate_dt(_grid, _energy_eq);
-	    std::cout << "dt is calculated\n";
+	    std::cout << "dt is calculated and is equal to "<<dt<<std::endl;
 	    
 	    for (auto const& boundary : _boundaries){
 	    	boundary->apply(_field, _energy_eq);
 	    }
 	    std::cout << "Boundaries are applied\n";
 	    
-	    //Second task.
+	    if (_energy_eq == true){
+	    	_field.calculate_temperatures(_grid, _discretization);
+	    	std::cout << "Temperatures calculated\n";
+	    }
+	    
 	    _field.calculate_fluxes(_grid, _discretization, _energy_eq);
-	    //std::cout << "Fluxes are calculated\n";
+	    std::cout << "Fluxes are calculated\n";
 	    
-	    //Third task.
 	    _field.calculate_rs(_grid);
-	    //std::cout << "Calculate righthand size\n";
+	    std::cout << "Calculated right-hand side\n";
 	    
-	    //Fourth and fifth tasks.
 	    int iter{0};
 	    double res = _pressure_solver->solve(_field, _grid, _boundaries); 
 	    while ((res > _tolerance) and (iter < _max_iter)) {
@@ -266,14 +267,12 @@ void Case::simulate() {
             std::cout << "t = " << t << ", res = " << res << ", tolerance = " << _tolerance << ", iter = " << iter << ", max iter = " << _max_iter <<  '\n';
 	    //}
 	    
-	    //Sixth task.
 	    _field.calculate_velocities(_grid);
 	    std::cout << "Velocities are calculated\n";
 	    
-	    //Eighth task.
-	    output_vtk(timestep);
 	    t = t + dt;
     	    timestep = timestep + 1;
+    	    output_vtk(timestep);
     }
 }
 
