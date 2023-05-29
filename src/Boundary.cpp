@@ -233,10 +233,35 @@ void InflowBoundary::apply(Fields &field, bool energy_eq) {
 		i_idx = currentCell->i();
 		j_idx = currentCell->j();
 	
-		field.p(i_idx, j_idx) = field.p(i_idx + 1, j_idx);
-		field.u(i_idx, j_idx) = _UIN;
-       	field.v(i_idx, j_idx) = 2 * _VIN - field.v(i_idx + 1, j_idx); 
-		field.f(i_idx, j_idx) = field.u(i_idx, j_idx);
+		// field.p(i_idx, j_idx) = field.p(i_idx + 1, j_idx);
+		// field.u(i_idx, j_idx) = _UIN;
+       	// field.v(i_idx, j_idx) = 2 * _VIN - field.v(i_idx + 1, j_idx); 
+		// field.f(i_idx, j_idx) = field.u(i_idx, j_idx);
+
+		if (currentCell->is_border(border_position::TOP) == true) {
+			field.u(i_idx, j_idx) = _UIN; // U component velocity at the top border
+			field.v(i_idx, j_idx) = _VIN; // V component velocity at the top border
+			field.p(i_idx, j_idx) = field.p(i_idx, j_idx + 1); // Zero Neumann condition for pressure
+			field.g(i_idx, j_idx) = field.v(i_idx, j_idx); // Dirichlet condition for V component flux
+		}
+		else if (currentCell->is_border(border_position::LEFT) == true) {
+			field.u(i_idx - 1, j_idx) = _UIN; // U component velocity at the left border
+			field.v(i_idx, j_idx) = _VIN; // V component velocity at the left border
+			field.p(i_idx, j_idx) = field.p(i_idx - 1, j_idx); // Zero Neumann condition for pressure
+			field.f(i_idx - 1, j_idx) = field.u(i_idx - 1, j_idx); // Dirichlet condition for U component flux
+		}
+		else if (currentCell->is_border(border_position::BOTTOM) == true) {
+			field.u(i_idx, j_idx) = _UIN; // U component velocity at the bottom border
+			field.v(i_idx, j_idx - 1) = _VIN; // V component velocity at the bottom border
+			field.p(i_idx, j_idx) = field.p(i_idx, j_idx - 1); // Zero Neumann condition for pressure
+			field.g(i_idx, j_idx - 1) = field.v(i_idx, j_idx - 1); // Dirichlet condition for V component flux
+		}
+		else if (currentCell->is_border(border_position::RIGHT) == true) {
+			field.u(i_idx, j_idx) = _UIN; // U component velocity at the right border
+			field.v(i_idx + 1, j_idx) = _VIN; // V component velocity at the right border
+			field.p(i_idx, j_idx) = field.p(i_idx + 1, j_idx); // Zero Neumann condition for pressure
+			field.f(i_idx, j_idx) = field.u(i_idx, j_idx); // Dirichlet condition for U component flux
+		}
 	}
 }
 
@@ -248,12 +273,36 @@ void OutflowBoundary::apply(Fields &field, bool energy_eq) {
 	int j_idx{0};
 	for (const auto currentCell : _cells){
 	
-		i_idx = currentCell->i();
-		j_idx = currentCell->j();
-		field.p(i_idx, j_idx) = field.p(i_idx - 1, j_idx);
-		field.u(i_idx, j_idx) = field.u(i_idx - 1, j_idx);
-		field.v(i_idx, j_idx) = field.v(i_idx - 1, j_idx);
-		field.v(i_idx, j_idx - 1) = field.v(i_idx - 1, j_idx - 1); 
-		field.f(i_idx - 1, j_idx) = field.u(i_idx, j_idx);
+		// field.p(i_idx, j_idx) = field.p(i_idx - 1, j_idx);
+		// field.u(i_idx, j_idx) = field.u(i_idx - 1, j_idx);
+		// field.v(i_idx, j_idx) = field.v(i_idx - 1, j_idx);
+		// field.v(i_idx, j_idx - 1) = field.v(i_idx - 1, j_idx - 1); 
+		// field.f(i_idx - 1, j_idx) = field.u(i_idx, j_idx);
+
+
+		if (currentCell->is_border(border_position::TOP) == true) {
+			field.p(i_idx, j_idx) = 0;
+			field.u(i_idx, j_idx) = field.u(i_idx, j_idx + 1);
+			field.v(i_idx, j_idx) = field.v(i_idx, j_idx + 1);
+			field.g(i_idx, j_idx) = field.v(i_idx, j_idx);
+		}
+		else if (currentCell->is_border(border_position::LEFT) == true) {
+			field.p(i_idx, j_idx) = 0;
+			field.u(i_idx - 1, j_idx) = field.u(i_idx, j_idx);
+			field.v(i_idx, j_idx) = field.v(i_idx - 1, j_idx);
+			field.f(i_idx - 1, j_idx) = field.u(i_idx - 1, j_idx);
+		}
+		else if (currentCell->is_border(border_position::BOTTOM) == true) {
+			field.p(i_idx, j_idx) = 0;
+			field.u(i_idx, j_idx) = field.u(i_idx, j_idx - 1);
+			field.v(i_idx, j_idx) = field.v(i_idx, j_idx - 1);
+			field.g(i_idx, j_idx - 1) = field.v(i_idx, j_idx - 1);
+		}
+		else if (currentCell->is_border(border_position::RIGHT) == true) {
+			field.p(i_idx, j_idx) = 0;
+			field.u(i_idx, j_idx) = field.u(i_idx + 1, j_idx);
+            field.v(i_idx + 1, j_idx) = field.v(i_idx, j_idx);
+			field.f(i_idx, j_idx) = field.u(i_idx, j_idx);
+		}
 	}
 }
