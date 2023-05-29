@@ -221,22 +221,42 @@ void MovingWallBoundary::apply(Fields &field, bool energy_eq) {
 	}
 }
 
-InflowBoundary::InflowBoundary(std::vector<Cell *> cells) : _cells(cells) {}
 InflowBoundary::InflowBoundary(std::vector<Cell *> cells, double UIN, double VIN) : _cells(cells), _UIN(UIN), _VIN(VIN) {}
 
 void InflowBoundary::apply(Fields &field, bool energy_eq) {
-	
+
 	int i_idx{0};
 	int j_idx{0};
+
 	for (const auto currentCell : _cells){
 	
 		i_idx = currentCell->i();
 		j_idx = currentCell->j();
-	
-		field.p(i_idx, j_idx) = field.p(i_idx + 1, j_idx);
-		field.u(i_idx, j_idx) = _UIN;
-       	field.v(i_idx, j_idx) = 2 * _VIN - field.v(i_idx + 1, j_idx); 
-		field.f(i_idx, j_idx) = field.u(i_idx, j_idx);
+		
+		if (currentCell->is_border(border_position::RIGHT) == true) {
+			field.p(i_idx, j_idx) = field.p(i_idx + 1, j_idx);
+			field.u(i_idx, j_idx) = _UIN;
+			field.v(i_idx, j_idx) = 2*_VIN - field.v(i_idx + 1, j_idx); 
+			field.f(i_idx, j_idx) = field.u(i_idx, j_idx);
+		}
+		else if (currentCell->is_border(border_position::LEFT) == true) {
+			field.p(i_idx, j_idx) = field.p(i_idx - 1, j_idx);
+			field.u(i_idx - 1, j_idx) = _UIN;
+			field.v(i_idx, j_idx) = 2*_VIN - field.v(i_idx - 1, j_idx); 
+			field.f(i_idx - 1, j_idx) = field.u(i_idx - 1, j_idx);
+		}
+		else if (currentCell->is_border(border_position::TOP) == true) {
+			field.p(i_idx, j_idx) = field.p(i_idx, j_idx + 1);
+			field.u(i_idx, j_idx) = 2*_UIN - field.u(i_idx, j_idx + 1);
+			field.v(i_idx, j_idx) = _VIN; 
+			field.g(i_idx, j_idx) = field.v(i_idx, j_idx);
+		}
+		else if (currentCell->is_border(border_position::BOTTOM) == true) {
+			field.p(i_idx, j_idx) = field.p(i_idx, j_idx - 1);
+			field.u(i_idx, j_idx) = 2*_UIN - field.u(i_idx, j_idx - 1);
+			field.v(i_idx, j_idx - 1) = _VIN; 
+			field.g(i_idx, j_idx - 1) = field.v(i_idx, j_idx - 1);
+		}
 	}
 }
 
@@ -246,14 +266,36 @@ void OutflowBoundary::apply(Fields &field, bool energy_eq) {
 
 	int i_idx{0};
 	int j_idx{0};
+
 	for (const auto currentCell : _cells){
 	
 		i_idx = currentCell->i();
 		j_idx = currentCell->j();
-		field.p(i_idx, j_idx) = field.p(i_idx - 1, j_idx);
-		field.u(i_idx, j_idx) = field.u(i_idx - 1, j_idx);
-		field.v(i_idx, j_idx) = field.v(i_idx - 1, j_idx);
-		field.v(i_idx, j_idx - 1) = field.v(i_idx - 1, j_idx - 1); 
-		field.f(i_idx - 1, j_idx) = field.u(i_idx, j_idx);
+		
+		if (currentCell->is_border(border_position::RIGHT) == true) {
+			field.p(i_idx, j_idx) = 0;
+			field.u(i_idx, j_idx) = field.u(i_idx + 1, j_idx);
+			field.v(i_idx, j_idx) = field.v(i_idx + 1, j_idx);
+			field.f(i_idx, j_idx) = field.u(i_idx, j_idx);
+		}
+		else if (currentCell->is_border(border_position::LEFT) == true) {
+			field.p(i_idx, j_idx) = 0;
+			field.u(i_idx, j_idx) = field.u(i_idx - 1, j_idx);;
+			field.v(i_idx, j_idx) = field.v(i_idx - 1, j_idx);; 
+			field.f(i_idx, j_idx) = field.u(i_idx, j_idx);
+		}
+		else if (currentCell->is_border(border_position::TOP) == true) {
+			field.p(i_idx, j_idx) = 0;
+			field.u(i_idx, j_idx) = field.u(i_idx, j_idx + 1);
+			field.v(i_idx, j_idx) = field.v(i_idx, j_idx + 1); 
+			field.g(i_idx, j_idx) = field.v(i_idx, j_idx);
+		}
+		else if (currentCell->is_border(border_position::BOTTOM) == true) {
+			field.p(i_idx, j_idx) = 0;
+			field.u(i_idx, j_idx) = field.u(i_idx, j_idx - 1);
+			field.v(i_idx, j_idx) = field.v(i_idx, j_idx - 1); 
+			field.g(i_idx, j_idx) = field.v(i_idx, j_idx);
+		}
 	}
+
 }
