@@ -89,33 +89,36 @@ double Fields::calculate_dt(Grid &grid, bool energy_eq) {
 	int j_idx{0};
 	double max_u{0};
 	double max_v{0};
-	for (const auto currentCell : grid.fluid_cells()){
-		i_idx = currentCell->i();
-		j_idx = currentCell->j();
+	//for (const auto currentCell : grid.fluid_cells()){
+	//	i_idx = currentCell->i();
+	//	j_idx = currentCell->j();
 		
-		if (abs(_U(i_idx, j_idx)) > max_u){
-			max_u = abs(_U(i_idx, j_idx));
-		}
-		if (abs(_V(i_idx, j_idx)) > max_v){
-			max_v = abs(_V(i_idx, j_idx));
-		}
-	}
-	
-	//max_u = std::abs(*std::max_element(_U.data() + 1, _U.data() + grid.fluid_cells().size() + 1));
-       // max_v = std::abs(*std::max_element(_V.data() + 1, _V.data() + grid.fluid_cells().size() + 1));
+	//	if (abs(_U(i_idx, j_idx)) > max_u){
+	//		max_u = abs(_U(i_idx, j_idx));
+	//	}
+	//	else { max_u = max_u;}
+		
+	//	if (abs(_V(i_idx, j_idx)) > max_v){
+	//		max_v = abs(_V(i_idx, j_idx));
+	//	}
+	//	else { max_v = max_v;}
+	//}
+	    max_u = std::abs(*std::max_element(_U.data() + 1, _U.data() + grid.fluid_cells().size() + 1));
+        max_v = std::abs(*std::max_element(_V.data() + 1, _V.data() + grid.fluid_cells().size() + 1));
         std::cout<<"umax = "<<max_u<<std::endl;
         std::cout<<"vmax = "<<max_v<<std::endl;
         std::cout<<"dx = "<<grid.dx()<<std::endl;
         std::cout<<"dy = "<<grid.dy()<<std::endl;
 	
-	double dta = std::min(grid.dx()/abs(max_u), grid.dy()/abs(max_v));
+	double dta = std::min(grid.dx()/max_u, grid.dy()/max_v);
 	double dtb = pow((1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0)), -1.0)/(2*_nu);
 	double dt = _tau*std::min(dta, dtb);
 	std::cout<<"dta = "<<dta<<std::endl;
 	std::cout<<"dtb = "<<dtb<<std::endl;
 	
 	if (energy_eq == true){
-		double dtc = pow((1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0)), -1.0)/(2*_alpha);
+		double dtc1 = 1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0);
+		double dtc = 1/(dtc1 * 2 * _alpha);
 		dt = std::min(dt, dtc);
 		std::cout<<"dtc = "<<dtc<<std::endl;
 	}
