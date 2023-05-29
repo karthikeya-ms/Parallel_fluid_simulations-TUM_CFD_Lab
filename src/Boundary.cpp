@@ -34,6 +34,7 @@ void FixedWallBoundary::apply(Fields &field, bool energy_eq) {
 			if (currentCell->is_border(border_position::TOP) == true){
 				field.p(i_idx, j_idx) = field.p(i_idx, j_idx + 1);
 				field.u(i_idx, j_idx) = -field.u(i_idx, j_idx + 1);
+				field.u(i_idx - 1, j_idx) = -field.u(i_idx - 1, j_idx + 1);
 				field.v(i_idx, j_idx) = 0; 
 				field.g(i_idx, j_idx) = field.v(i_idx, j_idx);
 				
@@ -49,6 +50,7 @@ void FixedWallBoundary::apply(Fields &field, bool energy_eq) {
 			else if (currentCell->is_border(border_position::BOTTOM) == true) {
 				field.p(i_idx, j_idx) = field.p(i_idx, j_idx - 1);
 				field.u(i_idx, j_idx) = -field.u(i_idx, j_idx - 1);
+				field.u(i_idx - 1, j_idx) = -field.u(i_idx - 1, j_idx - 1);
 				field.v(i_idx, j_idx - 1) = 0; 
 				field.g(i_idx, j_idx - 1) = field.v(i_idx, j_idx - 1);
 				
@@ -65,6 +67,7 @@ void FixedWallBoundary::apply(Fields &field, bool energy_eq) {
 				field.p(i_idx, j_idx) = field.p(i_idx + 1, j_idx);
 				field.u(i_idx, j_idx) = 0;
 				field.v(i_idx, j_idx) = -field.v(i_idx + 1, j_idx); 
+				field.v(i_idx, j_idx - 1) = -field.v(i_idx + 1, j_idx - 1);
 				field.f(i_idx, j_idx) = field.u(i_idx, j_idx);
 				
 				if (energy_eq == true){
@@ -79,7 +82,8 @@ void FixedWallBoundary::apply(Fields &field, bool energy_eq) {
 			else if (currentCell->is_border(border_position::LEFT) == true) {
 				field.p(i_idx, j_idx) = field.p(i_idx - 1, j_idx);
 				field.u(i_idx - 1, j_idx) = 0;
-				field.v(i_idx, j_idx) = -field.v(i_idx - 1, j_idx); 
+				field.v(i_idx, j_idx) = -field.v(i_idx - 1, j_idx);
+				field.v(i_idx, j_idx - 1) = -field.v(i_idx - 1, j_idx - 1); 
 				field.f(i_idx - 1, j_idx) = field.u(i_idx - 1, j_idx);
 				
 				if (energy_eq == true){
@@ -95,7 +99,7 @@ void FixedWallBoundary::apply(Fields &field, bool energy_eq) {
 		
 		else if (num_borders == 2){
 			if ((currentCell->is_border(border_position::TOP) == true) && (currentCell->is_border(border_position::RIGHT) == true)){
-				field.p(i_idx, j_idx) = (field.p(i_idx + 1, j_idx) + field.p(i_idx, j_idx + 1))/2.0;
+				field.p(i_idx, j_idx) = 0.5*(field.p(i_idx + 1, j_idx) + field.p(i_idx, j_idx + 1));
 				field.u(i_idx, j_idx) = 0;
 				field.u(i_idx - 1, j_idx) = -field.u(i_idx - 1, j_idx + 1);
 				field.v(i_idx, j_idx) = 0;
@@ -105,15 +109,15 @@ void FixedWallBoundary::apply(Fields &field, bool energy_eq) {
 				
 				if (energy_eq == true){
 					if (currentCell->wall_id() == 3){ //Adiabatic walls: Neumann boundary condition for T, with heat flux q_N = 0
-						field.t(i_idx, j_idx) = (field.t(i_idx, j_idx + 1) + field.t(i_idx + 1, j_idx))/2.0;
+						field.t(i_idx, j_idx) = 0.5*(field.t(i_idx, j_idx + 1) + field.t(i_idx + 1, j_idx));
 					}
 					else if ((currentCell->wall_id() == 4) || (currentCell->wall_id() == 5)){ //Hot/cold walls: Dirichlet boundary condition for T
-						field.t(i_idx, j_idx) = 2*_wall_temperature.at(currentCell->wall_id()) - (field.t(i_idx, j_idx + 1) + field.t(i_idx + 1, j_idx))/2.0;
+						field.t(i_idx, j_idx) = 2*_wall_temperature.at(currentCell->wall_id()) - 0.5*(field.t(i_idx, j_idx + 1) + field.t(i_idx + 1, j_idx));
 					}
 				}
 			}
 			else if ((currentCell->is_border(border_position::TOP) == true) && (currentCell->is_border(border_position::LEFT) == true)) {
-				field.p(i_idx, j_idx) = (field.p(i_idx, j_idx + 1) + field.p(i_idx - 1, j_idx))/2.0;
+				field.p(i_idx, j_idx) = 0.5*(field.p(i_idx, j_idx + 1) + field.p(i_idx - 1, j_idx));
 				field.u(i_idx - 1, j_idx) = 0;
 				field.u(i_idx, j_idx) = -field.u(i_idx, j_idx + 1);
 				field.v(i_idx, j_idx - 1) = -field.v(i_idx - 1, j_idx - 1);
@@ -123,33 +127,15 @@ void FixedWallBoundary::apply(Fields &field, bool energy_eq) {
 				
 				if (energy_eq == true){
 					if (currentCell->wall_id() == 3){ //Adiabatic walls: Neumann boundary condition for T, with heat flux q_N = 0
-						field.t(i_idx, j_idx) = (field.t(i_idx, j_idx + 1) + field.t(i_idx - 1, j_idx))/2.0;
+						field.t(i_idx, j_idx) = 0.5*(field.t(i_idx, j_idx + 1) + field.t(i_idx - 1, j_idx));
 					}
 					else if ((currentCell->wall_id() == 4) || (currentCell->wall_id() == 5)){ //Hot/cold walls: Dirichlet boundary condition for T
-						field.t(i_idx, j_idx) = 2*_wall_temperature.at(currentCell->wall_id()) - (field.t(i_idx, j_idx + 1) + field.t(i_idx - 1, j_idx))/2.0;
+						field.t(i_idx, j_idx) = 2*_wall_temperature.at(currentCell->wall_id()) - 0.5*(field.t(i_idx, j_idx + 1) + field.t(i_idx - 1, j_idx));
 					}
 				}
 			}
 			else if ((currentCell->is_border(border_position::BOTTOM) == true) && (currentCell->is_border(border_position::RIGHT) == true)) {
-				field.p(i_idx, j_idx) = (field.p(i_idx + 1, j_idx) + field.p(i_idx, j_idx - 1))/2.0;
-				field.u(i_idx, j_idx) = 0;
-				field.u(i_idx - 1, j_idx) = field.u(i_idx - 1, j_idx - 1);
-				field.v(i_idx, j_idx) = -field.v(i_idx + 1, j_idx);
-				field.v(i_idx, j_idx - 1) = 0; 
-				field.f(i_idx, j_idx) = field.u(i_idx, j_idx);
-				field.g(i_idx, j_idx - 1) = field.v(i_idx, j_idx - 1);
-				
-				if (energy_eq == true){
-					if (currentCell->wall_id() == 3){ //Adiabatic walls: Neumann boundary condition for T, with heat flux q_N = 0
-						field.t(i_idx, j_idx) = (field.t(i_idx, j_idx - 1) + field.t(i_idx + 1, j_idx))/2.0;
-					}
-					else if ((currentCell->wall_id() == 4) || (currentCell->wall_id() == 5)){ //Hot/cold walls: Dirichlet boundary condition for T
-						field.t(i_idx, j_idx) = 2*_wall_temperature.at(currentCell->wall_id()) - (field.t(i_idx, j_idx - 1) + field.t(i_idx + 1, j_idx))/2.0;
-					}
-				}
-			}
-			else if ((currentCell->is_border(border_position::BOTTOM) == true) && (currentCell->is_border(border_position::LEFT) == true)) {
-				field.p(i_idx, j_idx) = (field.p(i_idx - 1, j_idx) + field.p(i_idx, j_idx - 1))/2.0;
+				field.p(i_idx, j_idx) = 0.5*(field.p(i_idx + 1, j_idx) + field.p(i_idx, j_idx - 1));
 				field.u(i_idx, j_idx) = 0;
 				field.u(i_idx - 1, j_idx) = -field.u(i_idx - 1, j_idx - 1);
 				field.v(i_idx, j_idx) = -field.v(i_idx + 1, j_idx);
@@ -159,10 +145,28 @@ void FixedWallBoundary::apply(Fields &field, bool energy_eq) {
 				
 				if (energy_eq == true){
 					if (currentCell->wall_id() == 3){ //Adiabatic walls: Neumann boundary condition for T, with heat flux q_N = 0
-						field.t(i_idx, j_idx) = (field.t(i_idx, j_idx - 1) + field.t(i_idx - 1, j_idx))/2.0;
+						field.t(i_idx, j_idx) = 0.5*(field.t(i_idx, j_idx - 1) + field.t(i_idx + 1, j_idx));
 					}
 					else if ((currentCell->wall_id() == 4) || (currentCell->wall_id() == 5)){ //Hot/cold walls: Dirichlet boundary condition for T
-						field.t(i_idx, j_idx) = 2*_wall_temperature.at(currentCell->wall_id()) - (field.t(i_idx, j_idx - 1) + field.t(i_idx - 1, j_idx))/2.0;
+						field.t(i_idx, j_idx) = 2*_wall_temperature.at(currentCell->wall_id()) - 0.5*(field.t(i_idx, j_idx - 1) + field.t(i_idx + 1, j_idx));
+					}
+				}
+			}
+			else if ((currentCell->is_border(border_position::BOTTOM) == true) && (currentCell->is_border(border_position::LEFT) == true)) {
+				field.p(i_idx, j_idx) = 0.5*(field.p(i_idx - 1, j_idx) + field.p(i_idx, j_idx - 1));
+				field.u(i_idx, j_idx) = -field.u(i_idx, j_idx - 1);
+				field.u(i_idx - 1, j_idx) = 0;
+				field.v(i_idx, j_idx) = -field.v(i_idx - 1, j_idx);
+				field.v(i_idx, j_idx - 1) = 0; 
+				field.f(i_idx - 1, j_idx) = field.u(i_idx - 1, j_idx);
+				field.g(i_idx, j_idx - 1) = field.v(i_idx, j_idx - 1);
+				
+				if (energy_eq == true){
+					if (currentCell->wall_id() == 3){ //Adiabatic walls: Neumann boundary condition for T, with heat flux q_N = 0
+						field.t(i_idx, j_idx) = 0.5*(field.t(i_idx, j_idx - 1) + field.t(i_idx - 1, j_idx));
+					}
+					else if ((currentCell->wall_id() == 4) || (currentCell->wall_id() == 5)){ //Hot/cold walls: Dirichlet boundary condition for T
+						field.t(i_idx, j_idx) = 2*_wall_temperature.at(currentCell->wall_id()) - 0.5*(field.t(i_idx, j_idx - 1) + field.t(i_idx - 1, j_idx));
 					}
 				}
 			}
