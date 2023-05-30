@@ -74,13 +74,13 @@ the simulation. The residulas are diverging giving a value of Inf or NaN for Ray
 
 ## Natural Convection
 <div align="center">
-  <img width="800" height="550" src="ConvecctionVel.png">
+  <img width="600" height="600" src="ConvectionVel.png">
   <figcaption>Velocity Surface Plot</figcaption>
 </div>
 
 <div align="center">
-  <img width="800" height="550" src="ConvectionTemps.png">
-  <figcaption>Pressure contour at t_0</figcaption>
+  <img width="600" height="600" src="ConvectionTemps.png">
+  <figcaption>Temperature Surface Plot</figcaption>
 </div>
 
 # Challenges
