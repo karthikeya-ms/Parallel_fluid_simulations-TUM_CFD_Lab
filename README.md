@@ -21,13 +21,15 @@ This will run the case file and create the output folder `../example_cases/file_
 
 ## Results and Discussion
 
-<div align="left">
-  <img width="500" height="300" src="BFS_Velocity.png">
+<div align="center">
+  <img width="800" height="550" src="BFS_Velocity.png">
 </div>
 
 <div align="right">
   <img width="500" height="300" src="Obstacle_Velocity.png">
 </div>
+
+
 
 
 
