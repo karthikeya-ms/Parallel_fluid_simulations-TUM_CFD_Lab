@@ -1,21 +1,5 @@
-<div align="center">
-  <img width="466" height="492" src="FluidchenLogo.png">
-</div>
-
-
-## Working with fluidchen
-
-
-## Software Requirements
-
-
-```shell
-sudo apt-get update
-sudo apt-get upgrade
-sudo apt-get install build-essential cmake libvtk7-qt-dev openmpi-bin libopenmpi-dev
-```
-
-## Building the code
+## Running the code
+In addition to the instructions provided in the main README.md file, there is an additional implementation for running various examples cases provided in the repository. 
 
 ```shell
 git clone https://gitlab.lrz.de/oguzziya/GroupX_CFDLab.git
@@ -27,27 +11,19 @@ make
 
 After `make` completes successfully, you will get an executable `fluidchen` in your `build` directory. 
 
-
-
-## Running
-
 In order to run **Fluidchen**, the case file should be given as input parameter. Some default case files are located in the `example_cases` directory. Navigate to the `build/` directory and run:
 
 ```shell
-./fluidchen ../example_cases/LidDrivenCavity/LidDrivenCavity.dat
+./fluidchen file_name
 ```
+where file_name can be the name of any of the 6 cases provided in the example cases folder. Remember to give the file_name without any extension like `.dat`
+This will run the case file and create the output folder `../example_cases/file_name/file_name_Output`, which holds the `.vtk` files of the solution.
 
-This will run the case file and create the output folder `../example_cases/LidDrivenCavity/LidDrivenCavity_Output`, which holds the `.vtk` files of the solution.
+## Results and Discussion
 
-
-
-
-
-
-```
-
+<div align="center">
+  <img width="466" height="492" src="BFS_Velocity.png">
+</div>
 
 
 
-
-We are investigating an [issue](https://gitlab.lrz.de/tum-i05/public/fluidchen-skeleton/-/issues/3) that appears on specific systems and combinations of dependencies.
