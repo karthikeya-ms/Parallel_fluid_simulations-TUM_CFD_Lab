@@ -30,17 +30,56 @@ All the tasks mentioned in `Section 1.3 and 1.4` of the worksheet have been impl
   <figcaption>Velocity Surface Plot</figcaption>
 </div>
 
+<div style="display: flex; justify-content: center;">
+  <div>
+    <img width="400" height="550" src="image1.png">
+    <figcaption>Image 1</figcaption>
+  </div>
+  <div>
+    <img width="400" height="550" src="image2.png">
+    <figcaption>Image 2</figcaption>
+  </div>
+</div>
+
+
+
 ## The Karman Vortex Street 
 <div align="center">
   <img width="800" height="550" src="Obstacle_Velocity.png">
   <figcaption>Velocity Surface Plot</figcaption>
 </div>
 
+
+<div style="display: flex; justify-content: center;">
+  <div>
+    <img width="400" height="550" src="Obs_Pressure-T0.png">
+    <figcaption>Pressure contour at t_0</figcaption>
+  </div>
+  <div>
+    <img width="400" height="550" src="Obs_Pressure_Tend.png">
+    <figcaption>Pressure contour at t_end</figcaption>
+  </div>
+</div>
+
+
 ## Channel flow with a backward facing step 
 <div align="center">
   <img width="800" height="550" src="BFS_Velocity.png">
   <figcaption>Velocity Surface Plot</figcaption>
 </div>
+
+
+<div style="display: flex; justify-content: center;">
+  <div>
+    <img width="500" height="300" src="BFS_Pressure_T0.png">
+    <figcaption>Pressure contour at t_0</figcaption>
+  </div>
+  <div>
+    <img width="500" height="300" src="BFS_Pressure_TEND.png">
+    <figcaption>Pressure contour at t_end</figcaption>
+  </div>
+</div>
+
 
 ## 2.1 and 2.2
 
