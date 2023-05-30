@@ -134,7 +134,7 @@ Case::Case(std::string file_name) {
     build_domain(domain, imax, jmax);
     
     _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, UIN, VIN, PI, TI, alpha, beta, GX, GY);
+    _field = Fields(GX, GY, nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, UIN, VIN, PI, TI, alpha, beta);
     Discretization _discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
     _max_iter = itermax;
@@ -332,6 +332,7 @@ void Case::output_vtk(int timestep, int my_rank) {
     // Temp Velocity
     float vel[3];
     vel[2] = 0; // Set z component to 0
+    double index = 0;
 
     // Print pressure, velocity and temperature from bottom to top
     for (int j = 1; j < _grid.domain().size_y + 1; j++) {
@@ -346,14 +347,11 @@ void Case::output_vtk(int timestep, int my_rank) {
             vel[1] = (_field.v(i, j - 1) + _field.v(i, j)) * 0.5;
             Velocity->InsertNextTuple(vel);
             
-            //if (_grid.cell(i, j).wall_id() != 0){
-	       // Pressure->BlankCell((i + j*(i_max + 1)));
-            	//Velocity->BlankCell((i + j*(i_max + 1)));
-            	//if (_energy_eq){
-            	//	Temperature->BlankCell((i + j*(i_max + 1)));
-            	//}
-            //}
+            if (_grid.cell(i, j).type() == cell_type::FIXED_WALL){
+	        structuredGrid->BlankCell(index);
         }
+        index++;
+    }
     }
 
     // Velocity Array for point data
