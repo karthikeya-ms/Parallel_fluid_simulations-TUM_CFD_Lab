@@ -29,69 +29,46 @@ All the tasks mentioned in `Section 1.3 and 1.4` of the worksheet have been impl
   <img width="800" height="550" src="Cavity_Velocity.png">
   <figcaption>Velocity Surface Plot</figcaption>
 </div>
+One of the requirements of this worksheet was to preserve what was already implemented previously. As can be seen from the velocity surface plot for lid driven cavity, the accuracy of results in this case is maintained.
 
-
-
-## The Karman Vortex Street 
+## Task 1.4(b) The Karman Vortex Street 
 <div align="center">
-  <img width="800" height="550" src="Obstacle_Velocity.png">
+  <img width="800" height="550" src="ObsFlowVel.png">
   <figcaption>Velocity Surface Plot</figcaption>
 </div>
+The fluid inflow was set to u = 1.0 and v = 0.0. The upper and Lower boundaries have no slip boundary conditions imposed. The results from the surface plot is consistent with the sample output. The velocity has a minimum value of 0 at the boundaries and also right behind the areas of the obstacle.
 
-<div align="center">
-  <img width="800" height="550" src="Obs_Pressure-T0.png">
-  <figcaption>Pressure contour at t_0</figcaption>
-</div>
-
-<div align="center">
-  <img width="800" height="550" src="Obs_Pressure_Tend.png">
-  <figcaption>Pressure contour at t_end</figcaption>
-</div>
-
-
-## Channel flow with a backward facing step 
+## Task 1.4(c) Channel flow with a backward facing step 
 <div align="center">
   <img width="800" height="550" src="BFS_Velocity.png">
   <figcaption>Velocity Surface Plot</figcaption>
 </div>
+The inflow conditions in this case was set to u = 1.0 and v = 0.0. The boundary conditions imposed where no-slip conditions at the upper and lower walls. The geometry file creates an onstacle domain representing a square filling up half of the channel height. The results as can be seen from the velocity surface plot seems to be consistent with the sample output.
+
+## Task 2.2(d) Natural Convection
+<div align="center">
+  <img width="800" height="550" src="ConvectionVel.png">
+  <figcaption>Velocity Surface Plot</figcaption>
+</div>
+In this case, the heat equation was used to calculate the temperature values. As can be seen from the velocity surface plots, the fluid appears to have a circular motion in between the hot and cold walls. It is also interesting that the velocity is zero around the center of the domain.
 
 <div align="center">
-  <img width="800" height="550" src="BFS_Pressure_T0.png">
-  <figcaption>Pressure contour at t_0</figcaption>
+  <img width="800" height="550" src="ConvectionTemps.png">
+  <figcaption>Temperature Surface Plot</figcaption>
 </div>
-
-<div align="center">
-  <img width="800" height="550" src="BFS_Pressure_TEND.png">
-  <figcaption>Pressure contour at t_end</figcaption>
-</div>
-
-
+The temperatures at the boundaries where applied as boundary conditions. The results shown here where obtained with the first set of values provided in the worksheet with a dt value of 10. As expected, the temperature values at the end of the simulation shows that the heat flow is infact from the hot walls towards the cold and insulated walls.
 
 ## 2.1 and 2.2
 
-All the tasks mentioned in `Section 2.1 and 2.2` of the worksheet have been implemented. However, some issues were encountered during 
-the simulation. The residulas are diverging giving a value of Inf or NaN for RayleighBenard case and FluidTrap case. However, Natural Convection case was neatly simulated and the results are obtained and shown below. 
-
-## Natural Convection
-<div align="center">
-  <img width="600" height="500" src="ConvectionVel.png">
-  <figcaption>Velocity Surface Plot</figcaption>
-</div>
-
-<div align="center">
-  <img width="600" height="500" src="ConvectionTemps.png">
-  <figcaption>Temperature Surface Plot</figcaption>
-</div>
+All the tasks mentioned in `Section 2.1 and 2.2` of the worksheet have been implemented. However, some issues were encountered during the simulation. The residulas are diverging giving a value of Inf or NaN for RayleighBenard case and FluidTrap case. 
 
 # Challenges
 
 1) Ensuring that the Boundary conditions are correctly declared and defined for new Boundary classes.
 
-2) Understandng the cause of various errors like residual diverging and rectifying them.
+2) Understandng the cause of various errors and rectifying them.
 
-3) Implementing the energy equation on/off condition for multiple cases in the code files. 
-
-4) Understanding and implementing new boundary conditions like Inflow, Outflow, and Wall temperatures for the cases. 
+3) Implementing the energy equation on/off condition for multiple cases in thr files. 
 
 
 
