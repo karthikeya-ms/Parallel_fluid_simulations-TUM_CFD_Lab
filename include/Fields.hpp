@@ -34,7 +34,7 @@ class Fields {
      * @param[in] grid in which the fluxes are calculated
      *
      */
-    void calculate_fluxes(Grid &grid);
+    void calculate_fluxes(Grid &grid, double gamma);
 
     /**
      * @brief Right hand side calculations using the fluxes for the pressure
@@ -85,6 +85,19 @@ class Fields {
 
     /// pressure matrix access and modify
     Matrix<double> &p_matrix();
+
+    //Added: Headers of helper functions containing derivative terms to reduce cluttering in flux calculations for second task.
+    double d2udx2(int i_idx, int j_idx, Grid &grid);
+    double d2udy2(int i_idx, int j_idx, Grid &grid);
+    double du2dx(int i_idx, int j_idx, double gamma, Grid &grid);
+    double duvdy(int i_idx, int j_idx, double gamma, Grid &grid);
+    double duvdx(int i_idx, int j_idx, double gamma, Grid &grid);
+    double dv2dy(int i_idx, int j_idx, double gamma, Grid &grid);
+    double d2vdx2(int i_idx, int j_idx, Grid &grid);
+    double d2vdy2(int i_idx, int j_idx, Grid &grid);
+    double dpdx(int i_idx, int j_idx, Grid &grid);
+    double dpdy(int i_idx, int j_idx, Grid &grid);
+
 
   private:
     /// x-velocity matrix

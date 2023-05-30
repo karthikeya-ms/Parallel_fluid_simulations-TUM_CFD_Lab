@@ -1,5 +1,6 @@
 #include "Case.hpp"
 #include "Enums.hpp"
+#include "Discretization.hpp"
 
 #include <algorithm>
 #ifdef GCC_VERSION_9_OR_HIGHER
@@ -187,7 +188,46 @@ void Case::simulate() {
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
+    t = t + dt;
+    timestep = timestep + 1;
+    
+    while (t < _t_end) {
+	    //First task.
+	    for (auto const& boundary : _boundaries){
+	    	boundary->apply(_field);
+	    }
+	    
+	    //Second task.
+	    _field.calculate_fluxes(_grid, _discretization.gamma()); //Accessing Gamma value through a getter defined in Discretization.hpp
+	    
+	    //Third task.
+	    _field.calculate_rs(_grid);
+	    
+	    //Fourth and fifth tasks.
+	    int iter{0};
+	    double res = _pressure_solver->solve(_field, _grid, _boundaries);
+	    while (res > _tolerance and iter < _max_iter){
+	    	res = _pressure_solver->solve(_field, _grid, _boundaries);
+	    	for (auto const& boundary : _boundaries){
+	    		boundary->apply(_field);
+	    	}
+	    	iter = iter + 1;
+	    }
+	    
+	    //Sixth task.
+	    _field.calculate_velocities(_grid);
+	    
+	    //Seventh task.
+	    dt = _field.calculate_dt(_grid);
+	    
+	    //Eighth task.
+	    output_vtk(timestep);
+	    t = t + dt;
+    	    timestep = timestep + 1;
+    }   
 }
+
+
 
 void Case::output_vtk(int timestep, int my_rank) {
     // Create a new structured grid
