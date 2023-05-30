@@ -44,7 +44,7 @@ All the tasks mentioned in `Section 1.3 and 1.4` of the worksheet have been impl
 </div>
 
 <div align="center">
-  <img width="800" height="550" src="Obs_Pressure-Tend.png">
+  <img width="800" height="550" src="Obs_Pressure_Tend.png">
   <figcaption>Pressure contour at t_end</figcaption>
 </div>
 
