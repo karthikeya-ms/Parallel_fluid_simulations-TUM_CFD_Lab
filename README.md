@@ -22,7 +22,7 @@ This will run the case file and create the output folder `../example_cases/file_
 ## Results and Discussion
 
 <div align="left">
-  <img width="700" height="492" src="BFS_Velocity.png">
+  <img width="500" height="300" src="BFS_Velocity.png">
 </div>
 
 
