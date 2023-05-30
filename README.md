@@ -49,16 +49,14 @@ All the tasks mentioned in `Section 1.3 and 1.4` of the worksheet have been impl
   <figcaption>Velocity Surface Plot</figcaption>
 </div>
 
+<div align="center">
+  <img width="800" height="550" src="Obs_Pressure-T0.png">
+  <figcaption>Pressure contour at t_0</figcaption>
+</div>
 
-<div style="display: flex; justify-content: center;">
-  <div>
-    <img width="400" height="550" src="Obs_Pressure-T0.png">
-    <figcaption>Pressure contour at t_0</figcaption>
-  </div>
-  <div>
-    <img width="400" height="550" src="Obs_Pressure_Tend.png">
-    <figcaption>Pressure contour at t_end</figcaption>
-  </div>
+<div align="center">
+  <img width="800" height="550" src="Obs_Pressure-Tend.png">
+  <figcaption>Pressure contour at t_end</figcaption>
 </div>
 
 
@@ -68,17 +66,16 @@ All the tasks mentioned in `Section 1.3 and 1.4` of the worksheet have been impl
   <figcaption>Velocity Surface Plot</figcaption>
 </div>
 
-
-<div style="display: flex; justify-content: center;">
-  <div>
-    <img width="500" height="300" src="BFS_Pressure_T0.png">
-    <figcaption>Pressure contour at t_0</figcaption>
-  </div>
-  <div>
-    <img width="500" height="300" src="BFS_Pressure_TEND.png">
-    <figcaption>Pressure contour at t_end</figcaption>
-  </div>
+<div align="center">
+  <img width="800" height="550" src="BFS_Pressure_T0.png">
+  <figcaption>Pressure contour at t_0</figcaption>
 </div>
+
+<div align="center">
+  <img width="800" height="550" src="BFS_Pressure_TEND.png">
+  <figcaption>Pressure contour at t_end</figcaption>
+</div>
+
 
 
 ## 2.1 and 2.2
