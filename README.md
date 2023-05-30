@@ -36,6 +36,19 @@ All the tasks mentioned in `Section 1.3 and 1.4` of the worksheet have been impl
   <img width="800" height="550" src="Cavity_Velocity.png">
 </div>
 
+## 2.1 and 2.2
+
+All the tasks mentioned in `Section 2.1 and 2.2` of the worksheet have been implemented. However, some issues were encountered during 
+the simulation. The residulas are diverging giving a value of Inf or NaN for RayleighBenard case and FluidTrap case. For NaturalConvection, the dta value is blowing up to inf which was causing an unexpected behaviour in the simulation. 
+
+# Challenges
+
+1) Ensuring that the Boundary conditions are correctly declared and defined for new Boundary classes.
+
+2) Understandng the cause of various errors and rectifying them.
+
+3) Implementing the energy equation on/off condition for multiple cases in thr files. 
+
 
 
 
