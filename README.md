@@ -30,17 +30,6 @@ All the tasks mentioned in `Section 1.3 and 1.4` of the worksheet have been impl
   <figcaption>Velocity Surface Plot</figcaption>
 </div>
 
-<div style="display: flex; justify-content: center;">
-  <div>
-    <img width="400" height="550" src="image1.png">
-    <figcaption>Image 1</figcaption>
-  </div>
-  <div>
-    <img width="400" height="550" src="image2.png">
-    <figcaption>Image 2</figcaption>
-  </div>
-</div>
-
 
 
 ## The Karman Vortex Street 
