@@ -70,7 +70,18 @@ All the tasks mentioned in `Section 1.3 and 1.4` of the worksheet have been impl
 ## 2.1 and 2.2
 
 All the tasks mentioned in `Section 2.1 and 2.2` of the worksheet have been implemented. However, some issues were encountered during 
-the simulation. The residulas are diverging giving a value of Inf or NaN for RayleighBenard case and FluidTrap case. For NaturalConvection, the dta value is blowing up to inf which was causing an unexpected behaviour in the simulation. 
+the simulation. The residulas are diverging giving a value of Inf or NaN for RayleighBenard case and FluidTrap case. However, Natural Convection case was neatly simulated and the results are obtained and shown below. 
+
+## Natural Convection
+<div align="center">
+  <img width="800" height="550" src="ConvecctionVel.png">
+  <figcaption>Velocity Surface Plot</figcaption>
+</div>
+
+<div align="center">
+  <img width="800" height="550" src="ConvectionTemps.png">
+  <figcaption>Pressure contour at t_0</figcaption>
+</div>
 
 # Challenges
 
