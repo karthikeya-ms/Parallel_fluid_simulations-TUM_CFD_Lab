@@ -87,9 +87,11 @@ the simulation. The residulas are diverging giving a value of Inf or NaN for Ray
 
 1) Ensuring that the Boundary conditions are correctly declared and defined for new Boundary classes.
 
-2) Understandng the cause of various errors and rectifying them.
+2) Understandng the cause of various errors like residual diverging and rectifying them.
 
-3) Implementing the energy equation on/off condition for multiple cases in thr files. 
+3) Implementing the energy equation on/off condition for multiple cases in the code files. 
+
+4) Understanding and implementing new boundary conditions like Inflow, Outflow, and Wall temperatures for the cases. 
 
 
 
