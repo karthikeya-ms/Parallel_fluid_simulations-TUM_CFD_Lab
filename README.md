@@ -24,16 +24,22 @@ This will run the case file and create the output folder `../example_cases/file_
 
 All the tasks mentioned in `Section 1.3 and 1.4` of the worksheet have been implemented and the visualizations of the example cases are shown below for reference. Using the base parameters from 1.4, the converged solution was visualized and verified against the posted solution on Moodle. The results are similar to the sample solution, thus verifying the correctness of our code.
 
-<div align="center">
-  <img width="800" height="550" src="BFS_Velocity.png">
-</div>
-
-<div align="center">
-  <img width="800" height="550" src="Obstacle_Velocity.png">
-</div>
-
+## The Lid Driven Cavity
 <div align="center">
   <img width="800" height="550" src="Cavity_Velocity.png">
+  <figcaption>Velocity Surface Plot</figcaption>
+</div>
+
+## The Karman Vortex Street 
+<div align="center">
+  <img width="800" height="550" src="Obstacle_Velocity.png">
+  <figcaption>Velocity Surface Plot</figcaption>
+</div>
+
+## Channel flow with a backward facing step 
+<div align="center">
+  <img width="800" height="550" src="BFS_Velocity.png">
+  <figcaption>Velocity Surface Plot</figcaption>
 </div>
 
 ## 2.1 and 2.2
