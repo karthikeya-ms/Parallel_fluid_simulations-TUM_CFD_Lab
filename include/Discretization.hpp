@@ -39,7 +39,7 @@ class Discretization {
      * @param[out] result
      *
      */
-    static double convection_u(const Matrix<double> &U, const Matrix<double> &V, int i, int j);
+    static double convection_U(const Matrix<double> &U, const Matrix<double> &V, int i, int j);
 
     /**
      * @brief Convection in y direction using donor-cell scheme
@@ -51,7 +51,20 @@ class Discretization {
      * @param[out] result
      *
      */
-    static double convection_v(const Matrix<double> &U, const Matrix<double> &V, int i, int j);
+    static double convection_V(const Matrix<double> &U, const Matrix<double> &V, int i, int j);
+    
+    /**
+     * @brief Convection for temperature
+     *
+     * @param[in] temperature field
+     * @param[in] x-velocity field
+     * @param[in] y-velocity field
+     * @param[in] x index
+     * @param[in] y index
+     * @param[out] result
+     *
+     */
+    static double convection_T(const Matrix<double> &T, const Matrix<double> &U, const Matrix<double> &V, int i, int j);
 
     /**
      * @brief Laplacian term discretization using central difference
@@ -88,6 +101,11 @@ class Discretization {
      *
      */
     static double interpolate(const Matrix<double> &A, int i, int j, int i_offset, int j_offset);
+    
+    /**
+     * @brief Getter for the parameter gamma.
+     *
+     */
     static double gamma();
 
   private:

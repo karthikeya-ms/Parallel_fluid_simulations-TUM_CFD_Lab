@@ -18,7 +18,7 @@ class Boundary {
      *
      * @param[in] Field to be applied
      */
-    virtual void apply(Fields &field) = 0;
+    virtual void apply(Fields &field, bool energy_eq) = 0;
     virtual ~Boundary() = default;
 };
 
@@ -31,7 +31,7 @@ class FixedWallBoundary : public Boundary {
     FixedWallBoundary(std::vector<Cell *> cells);
     FixedWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_temperature);
     virtual ~FixedWallBoundary() = default;
-    virtual void apply(Fields &field);
+    virtual void apply(Fields &field, bool energy_eq);
 
   private:
     std::vector<Cell *> _cells;
@@ -49,10 +49,34 @@ class MovingWallBoundary : public Boundary {
     MovingWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_velocity,
                        std::map<int, double> wall_temperature);
     virtual ~MovingWallBoundary() = default;
-    virtual void apply(Fields &field);
+    virtual void apply(Fields &field, bool energy_eq);
 
   private:
     std::vector<Cell *> _cells;
     std::map<int, double> _wall_velocity;
     std::map<int, double> _wall_temperature;
+};
+
+class InflowBoundary : public Boundary {
+  public:
+    InflowBoundary(std::vector<Cell *> cells);
+    InflowBoundary(std::vector<Cell *> cells, double UIN, double VIN);
+    virtual ~InflowBoundary() = default;
+    virtual void apply(Fields &field, bool energy_eq);
+
+  private:
+    std::vector<Cell *> _cells;
+    double _UIN;
+    double _VIN;
+};
+
+//TODO
+class OutflowBoundary : public Boundary {
+  public:
+    OutflowBoundary(std::vector<Cell *> cells);
+    virtual ~OutflowBoundary() = default;
+    virtual void apply(Fields &field, bool energy_eq);
+
+  private:
+    std::vector<Cell *> _cells;
 };

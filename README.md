@@ -1,148 +1,119 @@
-<div align="center">
-  <img width="466" height="492" src="FluidchenLogo.png">
-</div>
+# Running the code
 
-Fluidchen is a CFD Solver developed for the CFD Lab taught at TUM Informatics, Chair of Scientific Computing in Computer Science.
+For this worksheet, we have extended our previous work from the first worksheet, as to be able to simulate the energy flow (heat) in the liquid due to reservoirs being in contact with the fluid, and to run different geometry files, not only for the lid driven cavity (LidDrivenCavity) which has a very simple geometry: a box-shaped geometry where only the obstracles are in the edges of the box. Now the code can work for any arbitrary configuration of geometry, which can be provided by the user in a .pgm file. In order to make use of an arbitrary geometry, make sure to follow a simple set of rules:
 
-After forking, use this `README.md` however you want: feel free to remove anything you don't need,
-or add any additional details we should know to run the code.
+- The file must have a squared array of integers from 0-8.
+- Each of the digits represents a different type of tile. This convention for the assignment of different tiles must be followed for the simulation to work correctly (check the simulation section for more information on it).
+- Specify all the required parameters as needed. If you want to make use of the heat equation make sure to initialize all the necessary parameters, the code will not check this for you.
+- When creating arbitrary geometries, make sure that a boundary cell has not more than two (2) fluid neighboors. The code will let you know if you did something incorrectly, but will not terminate. We will implement try/catch blocks further down the semester as for the user to not have to constantly check the terminal in case he did something wrong so that he manually terminates the execution of the binary (or simply implement a method which checks the geometry before creating the simulation case and terminates if there is something wrong with it).
 
-## Working with fluidchen
+If you want to run different geometries, make sure the different files are in the example_cases folder. Each case must have the aforementioned .pgm file and a .dat file containing all the necessary parameters. If you want to create a new geometry, called for example mygeometry, make sure to name the two files the same way inside a folder. In such case, inside the example_cases there must be a directory called mygeometry containing two files: mygeometry.pgm and mygeometry.dat. Finally, for the program to recognize mygeometry as a valid geometry, edit in a text edit the main.cpp file. In the main, at the line nine (9) you will see a vector named cases, please make sure to add the name of your arbitrary geometry to it. In this case, you should add a new entrance to the vector with the string mygeometry.
 
-You will extend this code step-by-step starting from a pure framework to a parallel CFD solver. Please follow these [instructions for work with git and submitting the assignments](docs/first-steps.md).
+In order to fork our repository and be able to produce results, make sure to run the following commands in your shell prompt:
 
-## Software Requirements
-
-This code is known to work on all currently supported Ubuntu LTS versions (22.04, 20.04, 18.04).
-In particular, you will need:
-
-- A recent version of the GCC compiler. Other compilers should also work, but you may need to tweak the CMakeLists.txt file (contributions welcome). GCC 7.4, 9.3, and 11.2 are known to work. See `CMakeLists.txt` and `src/Case.cpp` for some compiler-specific code.
-- CMake, to configure the build.
-- The VTK library, to generate result files. libvtk7 and libvtk9 are known to work.
-- OpenMPI (not for the skeleton, but when you implement parallelization).
-
-Get the dependencies on Ubuntu:
-
-```shell
-sudo apt-get update
-sudo apt-get upgrade
-sudo apt-get install build-essential cmake libvtk7-qt-dev openmpi-bin libopenmpi-dev
-```
-
-## Building the code
-
-```shell
-git clone https://gitlab.lrz.de/oguzziya/GroupX_CFDLab.git
-cd GroupX_CFDLab
-mkdir build && cd build
+shell
+git clone https://gitlab.lrz.de/00000000014B328F/group-d-cfd-lab.git
+cd group-d-cfd-lab
+mkdir build
+cd build
 cmake ..
 make
-```
 
-After `make` completes successfully, you will get an executable `fluidchen` in your `build` directory. Run the code from this directory.
-Note: Earlier versions of this documentation pointed to the option of `make install`. You may want to avoid this and directly work inside the repository while you develop the code.
 
-### Build options
+Afterwards, you should see a new binary file in your build directory named fluidchen. To execute the binary you have the option to run it for as many geometries as you want on the run, while just having to compile the code only once. In order to do that run the binary followed with the names of the geometries you want to run without any extension, separed by a blank space. If for example you want to run your newly defined geometry and the lid driven cavity, the way to run it would be with
 
-By default, **fluidchen** is installed in `DEBUG` mode. To obtain full performance, you can execute cmake as
+shell
+./fluidchen LidDrivenCavity mygeometry
 
-```shell
-cmake -DCMAKE_BUILD_TYPE=RELEASE ..
-```
 
-or
+This code will generate all the necessary output files for you to visualize the simulation in ParaView or any similar software of your preference. This process will create an output filder in ../example_cases/file_name/file_name_Output, which contains the .vtk files obtained from the simulation. If you want to use the heat equation, make sure that the variable energy_eq is set to on in the .dat file, otherwise, even if all the other parameters were correctly initialized, the simulation will not simulate the temperature.
 
-```shell
-cmake -DCMAKE_CXX_FLAGS="-O3" ..
-```
+# The Simulation
 
-You can see and modify all CMake options with, e.g., `ccmake .` inside `build/` (Ubuntu package `cmake-curses-gui`).
+To correctly initialize the different tiles, follow the convention stated below:
 
-A good idea would be that you setup your computers as runners for [GitLab CI](https://docs.gitlab.com/ee/ci/)
-(see the file `.gitlab-ci.yml` here) to check the code building automatically every time you push.
+0 : fluid.
+1 : inflow.
+2 : outflow.
+3 : fixed wall (adiabatic).
+4 : fixed wall (hot).
+5 : fixed wall (cold).
+8 : moving wall.
 
-## Running
+Note that tehcnically there is no difference between hot and cold walls, just their temperature which is input by the user in the .dat file anyway, but if possible try to maintain this convention to avoid possible confussion. The extra id's 6 and 7 can be used by the user to define extra custom walls.
 
-In order to run **Fluidchen**, the case file should be given as input parameter. Some default case files are located in the `example_cases` directory. Navigate to the `build/` directory and run:
+To simulate the energy transfer in the fluid, other than using the Navier-Stokes equations to simulate the dynamics of the fluid, we have used the heat equation which is given by:
 
-```shell
-./fluidchen ../example_cases/LidDrivenCavity/LidDrivenCavity.dat
-```
+math
+\dfrac{\partial T}{\partial t} + \vec{u}\dot\vec{\nabla}T = \alpha\Delta T + Q,
 
-This will run the case file and create the output folder `../example_cases/LidDrivenCavity/LidDrivenCavity_Output`, which holds the `.vtk` files of the solution.
+where T denotes the temperature, time is t, $\vec{u}$ is the velocity vector, $\vec{\nabla}$ is the gradient, or vector of derivatives, Q is the extenal sources/sinks of energy and $\Delta$ is the laplacian (summation over the second derivatives).
 
-If the input file does not contain a geometry file (added later in the course), fluidchen will run the lid-driven cavity case with the given parameters.
+Additionally, we have used the Boussinesq approximation, for which we assume that the density remains constant through the whole fluid (we are assuming incompressible fluids) except for terms which include buoyancy, which are terms coming from the fact that materials tend to expant (their density decreases) when they heat up.
 
-## Special systems
+Finally, to ensure the different observables are held constant as expected from the input variables given by the user, we have used the following boundary conditions for the different type of cells:
 
-### macOS
+- Hot/cold walls: Since they need to have a constant temperature throughout the whole simulation, we have used Diriclet boundary conditions as to ensure they always retain their temperature T.
+- Abiadatic walls: As the name implies, for this type of wall, we have used Neumann conditions with zero derivative, meaning adiavatic conditions, which means that there is no grandient of temperature between said wall and its neighboor, meaning that both of them have the same temperature.
+- Inflow: For this boundary tile we used the fact that naturally, their velocity must be constant, as we used Diriclet boundary conditions for their velocity, using the input value given by the user, and for the pressure we again used adiabatic conditions as their pressure should not affect that of the neighbooring cells.
+- Outflow: Finally, for the outflow cells we used Dirichlet boundary conditions for the pressure, to maintain it as zero. Although this value should be set to one atmosphere, which is the pressure assumed outside the fluid container, this does not affect either the simulation or the visualization results, as we are more concern about the movement of the fluid itself than how it flows out. For the velocity we have used Neumann conditions with no gradient again, since naturally, is the fluid is moving at high speeds just beside the opening, then we would physically expect the fluid to come out at high speed.
 
-Students have previously successfully ran **Fluidchen** on macOS. However, this is not a system we regularly test. Your contribution here is, therefore, essential in improving this documentation.
+# Challenges
 
-In macOS, you can use the default `clang` compiler. Do not install `gcc`, since it might cause problems with the standard library and VTK. Other dependencies can be installed by using `homebrew` package manager as
+Finally, on top of having to think of an efficient way of reading and implementing the new changes to the workflow, we found it particularly difficult to debug the code, as we had some small bugs passing over from the first worksheet, which were very subtle and difficult to notice, and took us some time trying to test and debug the code as for it to work. This was reflected on the residual of the SOR method, which actually had nothing to do with the actual bug, as we did not had to change the implementation of the SOR at all, which also misguided us into what the bug might have been. Finally, implement also the boundary conditions of the inflow and outflow cells was a complicated at the beginning, as there were no instructions provided on out to deal with them, so we had to use our own knowledge and physical intuition to do something as for the simulation to be able to fully and correctly run, so that we could visualize the results and decide on the go what to change.
 
-```shell
-brew install cmake
-brew install open-mpi
-brew install vtk
-```
+# Results and Discussion
+## 1.3 and 1.4
 
-#### macOS Troubleshooting
+All the tasks mentioned in `Section 1.3 and 1.4` of the worksheet have been implemented and the visualizations of the example cases are shown below for reference. Using the base parameters from 1.4, the converged solution was visualized and verified against the posted solution on Moodle. The results are similar to the sample solution, thus verifying the correctness of our code.
 
-- In macOS, the default `g++` command is linked to `clang++` command, which means, `g++` command does not run the GCC compiler but the Clang compiler.
-- Setup of GCC compiler is expected to be cumbersome and clashes with lots of other dependencies, therefore please do not use GCC compiler on this project.
-- If CMake cannot find the correct C++ binary, you can set it by
+## The Lid Driven Cavity
+<div align="center">
+  <img width="800" height="550" src="Cavity_Velocity.png">
+  <figcaption>Velocity Surface Plot</figcaption>
+</div>
+One of the requirements of this worksheet was to preserve what was already implemented previously. As can be seen from the velocity surface plot for lid driven cavity, the accuracy of results in this case is maintained.
 
-  ```shell
-  export CXX=`which clang++``
-  export CMAKE_CXX_COMPILER=`which clang++``
-  ```
+## Task 1.4(b) The Karman Vortex Street 
+<div align="center">
+  <img width="800" height="550" src="ObsFlowVel.png">
+  <figcaption>Velocity Surface Plot</figcaption>
+</div>
+The fluid inflow was set to u = 1.0 and v = 0.0. The upper and Lower boundaries have no slip boundary conditions imposed. The results from the surface plot is consistent with the sample output. The velocity has a minimum value of 0 at the boundaries and also right behind the areas of the obstacle.
 
-which is going to set the corresponding environment variables to the path of Clang compiler. Please note that if you run these commands on a terminal session, they are only going to be valid on that terminal session. In order to make these changes permanent, you can add these lines to your `~/.zshrc` file.
+## Task 1.4(c) Channel flow with a backward facing step 
+<div align="center">
+  <img width="800" height="550" src="BFS_Velocity.png">
+  <figcaption>Velocity Surface Plot</figcaption>
+</div>
+The inflow conditions in this case was set to u = 1.0 and v = 0.0. The boundary conditions imposed where no-slip conditions at the upper and lower walls. The geometry file creates an onstacle domain representing a square filling up half of the channel height. The results as can be seen from the velocity surface plot seems to be consistent with the sample output.
 
-- Although installation of VTK looks simple, sometimes it is possible that CMake cannot find some necessary libraries for VTK, most famous one being Qt5. If you face an error something like:
+## Task 2.2(d) Natural Convection
+<div align="center">
+  <img width="800" height="550" src="ConvectionVel.png">
+  <figcaption>Velocity Surface Plot</figcaption>
+</div>
+In this case, the heat equation was used to calculate the temperature values. As can be seen from the velocity surface plots, the fluid appears to have a circular motion in between the hot and cold walls. It is also interesting that the velocity is zero around the center of the domain.
 
-```shell
-CMake Error at /usr/local/lib/cmake/vtk-9.0/VTK-vtk-module-find-packages.cmake:115 (find_package):
- By not providing "FindQt5.cmake" in CMAKE_MODULE_PATH this project has
- asked CMake to find a package configuration file provided by "Qt5", but
- CMake did not find one.
+<div align="center">
+  <img width="800" height="550" src="ConvectionTemps.png">
+  <figcaption>Temperature Surface Plot</figcaption>
+</div>
+The temperatures at the boundaries where applied as boundary conditions. The results shown here where obtained with the first set of values provided in the worksheet with a dt value of 10. As expected, the temperature values at the end of the simulation shows that the heat flow is infact from the hot walls towards the cold and insulated walls.
 
- Could not find a package configuration file provided by "Qt5" (requested
- version 5.15) with any of the following names:
+## 2.1 and 2.2
 
-   Qt5Config.cmake
-   qt5-config.cmake
+All the tasks mentioned in `Section 2.1 and 2.2` of the worksheet have been implemented. However, some issues were encountered during the simulation. The residulas are diverging giving a value of Inf or NaN for RayleighBenard case and FluidTrap case. 
 
- Add the installation prefix of "Qt5" to CMAKE_PREFIX_PATH or set "Qt5_DIR"
- to a directory containing one of the above files.  If "Qt5" provides a
- separate development package or SDK, be sure it has been installed.
-```
+# Challenges
 
-which means that CMake could not find Qt5. Solution is simple fortunately. First, make sure that you have Qt5 installed:
+1) Ensuring that the Boundary conditions are correctly declared and defined for new Boundary classes.
 
-```shell
-brew install qt5
-```
+2) Understandng the cause of various errors and rectifying them.
 
-Then extend `CMAKE_PREFIX_PATH`, which are the locations where CMake tries to find packages, by adding following lines to your `.zshrc` file
+3) Implementing the energy equation on/off condition for multiple cases in thr files. 
 
-```shell
-export CMAKE_PREFIX_PATH="/usr/local/opt/qt5:$CMAKE_PREFIX_PATH"
-```
 
-Please not that your installation might be in another location. The most possible another location is `/usr/local/Cellar/qt@5/5.**.*/`, which depends on the Qt5 version.
 
-## Troubleshooting
-### VTK not found
 
-You might run into a problem where the VTK library is not found. To fix this, you can try the following steps:
 
-1. Find the installation path of your VTK library
-2. Define this path as an environment variable, as e.g. `export VTK_DIR=".../lib/cmake/vtk-8.2"`
-3. Start in a clean build folder
-4. Run `cmake ..` again
-
-### No rule to make target '/usr/lib/x86_64-linux-gnu/libdl.so'
-
-We are investigating an [issue](https://gitlab.lrz.de/tum-i05/public/fluidchen-skeleton/-/issues/3) that appears on specific systems and combinations of dependencies.
