@@ -13,6 +13,7 @@
 #include <map>
 #include <vector>
 #include <mpi.h>
+#include <cstdlib>
 
 #ifdef GCC_VERSION_9_OR_HIGHER
 namespace filesystem = std::filesystem;
@@ -117,10 +118,17 @@ Case::Case(std::string file_name, int argn, char **args) {
     if ((_iproc == 1) and (_jproc == 1)){
     	std::string question;
 	while ((question != "yes") and (question != "no")){
-		std::cout << "Running simulation in sequential mode (only one processor), are you sure you want to continue? Please type 'yes' or 'no' to continue. If using parallelization (more processors) runtime can be significantly reduced:\n";
+		std::cout << "Specified number of processors on x and y-axis set to 1. Running simulation in sequential mode (only one processor), are you sure you want to continue? Please type 'yes' or 'no' to continue. If using parallelization (more processors) runtime can be significantly reduced:\n";
 		std::cin >> question;
 	}
 	if (question == "no"){
+		std::ofstream outFile(file_name, std::ios::app); // Open file in append mode
+
+	        if (!outFile) {
+		    std::cerr << "Error opening file " << file_name << " to add iproc and jproc parameters." << std::endl;
+		    exit(1);
+	        }
+
 		std::cout << "Please input the number of processes for the x-axis:\n";
 		std::cin >> iproc;
 		
@@ -141,10 +149,21 @@ Case::Case(std::string file_name, int argn, char **args) {
 		    std::cout << "Please input the number of processes for the y-axis:\n";
 		    std::cin >> jproc;
 		}
-		_iproc = iproc;
-    		_jproc = jproc;
+		std::string lineToAdd1 = "iproc          " + std::to_string(iproc);
+		std::string lineToAdd2 = "jproc          " + std::to_string(jproc);
+
+	        outFile << lineToAdd1 << std::endl; // Write the line to the file
+	        outFile << lineToAdd2 << std::endl;
+
+	        outFile.close(); // Close the file
+	    
+	    	std::cout << "Thank you. Successfully added parameters to '.dat' file with " << iproc << " processors in x-axis, and " << jproc << " processors in y-axis." << std::endl;
+	    	std::cout << "Proceeding to terminate program. Please run again the scrip using the following command: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "'" << std::endl;
+	    	exit(0);	
 	}
-	std::cout << "Thank you. Proceeding to run simulation with #" << _iproc << " processors in x-axis, and #" << _jproc << " processors in y-axis." << std::endl;
+	else {
+		std::cout << "Proceeding to run simulation with only one processor." << std::endl;
+	}
     }
 
     std::map<int, double> wall_vel;
@@ -168,10 +187,14 @@ Case::Case(std::string file_name, int argn, char **args) {
 
     MPI_Init(&argn, &args);
     //MPI_Init(NULL, NULL);
-    int size = _iproc*_jproc;
+    int size, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    
+    if (_iproc*_jproc != size){
+    	std::cout << "Warning: iproc, jproc and number of processes specified at runtime do not match. Terminating program\nPlease make sure to run the code using the following command line: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "'" << std::endl;
+    	exit(1);
+    }
     
     std::cout << "iproc: " << _iproc << ". jproc: " << _jproc << ". Total number of threads: " << size << std::endl;
     std::cout << "Total domain should have the following dimentions (number of cells, in x and y: (" << imax << ", " << jmax << ")." << std::endl;
