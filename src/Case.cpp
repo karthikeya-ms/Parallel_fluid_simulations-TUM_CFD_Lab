@@ -12,6 +12,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <mpi.h>
 
 #ifdef GCC_VERSION_9_OR_HIGHER
 namespace filesystem = std::filesystem;
@@ -27,9 +28,10 @@ namespace filesystem = std::experimental::filesystem;
 #include <vtkStructuredGrid.h>
 #include <vtkStructuredGridWriter.h>
 #include <vtkTuple.h>
+#include <limits>
 
-//Case::Case(std::string file_name, int argn, char **args) {
-Case::Case(std::string file_name) {
+Case::Case(std::string file_name, int argn, char **args) {
+//Case::Case(std::string file_name) {
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
     std::ifstream file(file_name);
@@ -58,6 +60,8 @@ Case::Case(std::string file_name) {
     int num_walls{6};  /* number of different wall classes (wall id ranging from 3-7). Initialized with arbitrary value to allocate heap memory for temps variable */
     double temps[num_walls]; /* Vector of temperatures of the different walls */
     std::string geo_file{"NONE"};     /* String with the name of the geometry file loaded */
+    int iproc{1};    /* number of processors used to parallelize simulation in x-axis */
+    int jproc{1};    /* number of processors used to parallelize simulation in x-axis */
     
 
     if (file.is_open()) {
@@ -100,10 +104,48 @@ Case::Case(std::string file_name) {
 			}
 	        }
 	        if (var == "geo_file") file >> geo_file;
+	        if (var == "iproc") file >> iproc;
+	        if (var == "jproc") file >> jproc;
             }
         }
     }
     file.close();
+    
+    _iproc = iproc;
+    _jproc = jproc;
+    
+    if ((_iproc == 1) and (_jproc == 1)){
+    	std::string question;
+	while ((question != "yes") and (question != "no")){
+		std::cout << "Running simulation in sequential mode (only one processor), are you sure you want to continue? Please type 'yes' or 'no' to continue. If using parallelization (more processors) runtime can be significantly reduced:\n";
+		std::cin >> question;
+	}
+	if (question == "no"){
+		std::cout << "Please input the number of processes for the x-axis:\n";
+		std::cin >> iproc;
+		
+		while (!std::cin.good())
+		{
+		    std::cin.clear();
+		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		    std::cout << "Please input the number of processes for the x-axis:\n";
+		    std::cin >> iproc;
+		}
+		
+		std::cout << "Please input the number of processes for the y-axis:\n";
+		std::cin >> jproc;
+		while (!std::cin.good())
+		{
+		    std::cin.clear();
+		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		    std::cout << "Please input the number of processes for the y-axis:\n";
+		    std::cin >> jproc;
+		}
+		_iproc = iproc;
+    		_jproc = jproc;
+	}
+	std::cout << "Thank you. Proceeding to run simulation with #" << _iproc << " processors in x-axis, and #" << _jproc << " processors in y-axis." << std::endl;
+    }
 
     std::map<int, double> wall_vel;
     std::map<int, double> wall_temp;
@@ -124,6 +166,75 @@ Case::Case(std::string file_name) {
     // Set file names for geometry file and output directory
     set_file_names(file_name);
 
+    MPI_Init(&argn, &args);
+    //MPI_Init(NULL, NULL);
+    int size = _iproc*_jproc;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    int my_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    
+    std::cout << "iproc: " << _iproc << ". jproc: " << _jproc << ". Total number of threads: " << size << std::endl;
+    std::cout << "Total domain should have the following dimentions (number of cells, in x and y: (" << imax << ", " << jmax << ")." << std::endl;
+    
+    int imin_local;
+    int imax_local;
+    int jmin_local;
+    int jmax_local;
+    
+    int my_x = my_rank%_iproc;
+    int my_y = (my_rank - my_x)/_iproc;
+    
+    if ((imax % _iproc) == 0){ //All processors take same number of tiles (x-axis).
+	imin_local = my_x*(imax/_iproc) + 1;
+	imax_local = (my_x + 1)*(imax/_iproc);
+	
+	if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
+		jmin_local = my_y*(jmax/_jproc) + 1;
+		jmax_local = (my_y + 1)*(jmax/_jproc);
+	}
+	else{ //Not all processors take same number of tiles (y-axis).
+	    	if (my_y < (jmax % _jproc)){ //Processors with an extra tile (y-axis).
+	    		jmin_local = my_y*(jmax/_jproc) + (my_y + 1);
+			jmax_local = (my_y + 1)*(jmax/_jproc) + (my_y + 1);
+	 	}
+	 	else{ //Processors with no extra tile (y-axis).
+	 		jmin_local = my_y*(jmax/_jproc) + (jmax % _jproc + 1);
+			jmax_local = (my_y + 1)*(jmax/_jproc) + (jmax % _jproc);
+	 	}
+	}
+	
+	    
+    }
+    
+    else{ //Not all processors take same number of tiles (x-axis).
+    	if (my_x < (imax % _iproc)){ //Processors with an extra tile (x-axis).
+    		imin_local = my_x*(imax/_iproc) + (my_x + 1);
+		imax_local = (my_x + 1)*(imax/_iproc) + (my_x + 1);
+ 	}
+ 	else{ //Processors with no extra tile (x-axis).
+ 		imin_local = my_x*(imax/_iproc) + (imax % _iproc + 1);
+		imax_local = (my_x + 1)*(imax/_iproc) + (imax % _iproc);
+ 	}
+ 	if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
+		jmin_local = my_y*(jmax/_jproc) + 1;
+		jmax_local = (my_y + 1)*(jmax/_jproc);
+	}
+	else{ //Not all processors take same number of tiles (y-axis).
+	    	if (my_y < (jmax % _jproc)){ //Processors with an extra tile (y-axis).
+	    		jmin_local = my_y*(jmax/_jproc) + (my_y + 1);
+			jmax_local = (my_y + 1)*(jmax/_jproc) + (my_y + 1);
+	 	}
+	 	else{ //Processors with no extra tile (y-axis).
+	 		jmin_local = my_y*(jmax/_jproc) + (jmax % _jproc + 1);
+			jmax_local = (my_y + 1)*(jmax/_jproc) + (jmax % _jproc);
+	 	}
+	}
+    }
+    
+    std::cout << "I am thread with id: " << my_rank << ". My x and y coordinates are: (" << my_x << ", " << my_y << "). I got assigned tiles from x-position: [" << imin_local << ", " << imax_local << "], and y-position: [" << jmin_local << ", " << jmax_local << "]." << std::endl;
+    
+    MPI_Finalize();
+    
     // Build up the domain
     Domain domain;
     domain.dx = xlength / static_cast<double>(imax);
@@ -154,6 +265,8 @@ Case::Case(std::string file_name) {
     if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
     }
+    
+    std::cout << "KILL PROGRAM" << std::endl;
 }
 
 void Case::set_file_names(std::string file_name) {
@@ -387,6 +500,7 @@ void Case::output_vtk(int timestep, int my_rank) {
 }
 
 void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
+    	
     domain.imin = 0;
     domain.jmin = 0;
     domain.imax = imax_domain + 2;

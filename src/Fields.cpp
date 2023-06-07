@@ -111,7 +111,6 @@ double Fields::calculate_dt(Grid &grid, bool energy_eq) {
 	if (energy_eq == true){
 		double dtc = pow((1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0)), -1.0)/(2*_alpha);
 		dt = std::min(dt, dtc);
-		std::cout<<"dtc = "<<dtc<<std::endl;
 	}
 	_dt = dt;
 	return _dt; 

@@ -14,7 +14,7 @@ int main(int argn, char **args) {
 			std::cout << "Initializing simulation for case: " << args[i] << '\n';
 			file_name = "../example_cases/";
 			file_name = file_name + args[i] + "/" + args[i] + ".dat";
-			Case problem(file_name);
+			Case problem(file_name, argn, args);
 			std::cout << "Created new case. Starting Simulation:\n";
 			problem.simulate();
 			std::cout << "Successfully finished simulation for case: " << args[i] << '\n';

@@ -76,3 +76,6 @@ VIN          0.0
 # num_of_walls:     number of walls
 #--------------------------------------------
 num_of_walls 1
+
+iproc       2
+jproc       3
