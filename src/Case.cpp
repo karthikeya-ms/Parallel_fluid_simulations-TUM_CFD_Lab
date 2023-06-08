@@ -185,19 +185,17 @@ Case::Case(std::string file_name, int argn, char **args) {
     // Set file names for geometry file and output directory
     set_file_names(file_name);
 
-    MPI_Init(&argn, &args);
-    //MPI_Init(NULL, NULL);
     int size, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     
     if (_iproc*_jproc != size){
-    	std::cout << "Warning: iproc, jproc and number of processes specified at runtime do not match. Terminating program\nPlease make sure to run the code using the following command line: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "'" << std::endl;
+    	std::cout << "Warning: iproc, jproc and number of processes specified at runtime do not match: iproc = "<< iproc << ", jproc = " << jproc << " and size = " << size << ". Terminating program\nPlease make sure to run the code using the following command line: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "', or change the values of iproc and jproc in the '.dat' file such that iproc*jproc = size." << std::endl;
     	exit(1);
     }
     
-    std::cout << "iproc: " << _iproc << ". jproc: " << _jproc << ". Total number of threads: " << size << std::endl;
-    std::cout << "Total domain should have the following dimentions (number of cells, in x and y: (" << imax << ", " << jmax << ")." << std::endl;
+    std::cout << "iproc = " << _iproc << ". jproc = " << _jproc << ". Total number of threads = " << size << std::endl;
+    std::cout << "Total domain should have the following dimentions (number of cells), in x and y: (" << imax << ", " << jmax << ")." << std::endl;
     
     int imin_local;
     int imax_local;
@@ -256,23 +254,24 @@ Case::Case(std::string file_name, int argn, char **args) {
     
     std::cout << "I am thread with id: " << my_rank << ". My x and y coordinates are: (" << my_x << ", " << my_y << "). I got assigned tiles from x-position: [" << imin_local << ", " << imax_local << "], and y-position: [" << jmin_local << ", " << jmax_local << "]." << std::endl;
     
-    MPI_Finalize();
-    
     // Build up the domain
     Domain domain;
     domain.dx = xlength / static_cast<double>(imax);
     domain.dy = ylength / static_cast<double>(jmax);
-    domain.domain_size_x = imax;
-    domain.domain_size_y = jmax;
+    domain.domain_size_x = imax_local - imin_local + 1;
+    domain.domain_size_y = jmax_local - jmin_local + 1;
 
-    build_domain(domain, imax, jmax);
+    build_domain(domain, imax_local, imin_local, jmax_local, jmin_local);
+    
+    std::cout << "My domain has size_x = " << domain.size_x << ", and size_y = " << domain.size_y << "." << std::endl;
     
     _grid = Grid(_geom_name, domain);
+        std::cout << "moop" << std::endl;
     _field = Fields(GX, GY, nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, UIN, VIN, PI, TI, alpha, beta);
     Discretization _discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
     _max_iter = itermax;
-    _tolerance = eps;	
+    _tolerance = eps;
 	
     // Construct boundaries
     if (not _grid.moving_wall_cells().empty()) {
@@ -290,6 +289,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     
     std::cout << "KILL PROGRAM" << std::endl;
+    MPI_Finalize();
 }
 
 void Case::set_file_names(std::string file_name) {
@@ -522,12 +522,12 @@ void Case::output_vtk(int timestep, int my_rank) {
     writer->Write();
 }
 
-void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
+void Case::build_domain(Domain &domain, int imax_local, int imin_local, int jmax_local, int jmin_local) {
     	
-    domain.imin = 0;
-    domain.jmin = 0;
-    domain.imax = imax_domain + 2;
-    domain.jmax = jmax_domain + 2;
-    domain.size_x = imax_domain;
-    domain.size_y = jmax_domain;
+    domain.imin = imin_local - 1;
+    domain.jmin = jmin_local - 1;
+    domain.imax = imax_local + 1;
+    domain.jmax = jmax_local + 1;
+    domain.size_x = imax_local - imin_local + 1;
+    domain.size_y = jmax_local - jmin_local + 1;
 }
