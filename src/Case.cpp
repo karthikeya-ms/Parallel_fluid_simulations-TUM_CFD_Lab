@@ -111,6 +111,23 @@ Case::Case(std::string file_name, int argn, char **args) {
         }
     }
     file.close();
+
+    _datfile_name = file_name;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    _process_rank = process_rank;
+    _size = size;
+
+    if (_iproc * _jproc != _size) {
+        Communication::finalize();
+        if (_process_rank == 0) {
+            std::cerr << "please check your iproc(number of processes for x-direction) and jproc(number of processes "
+                         "for y-direction). Their product should be the total number of processes for the problem"
+                      << std::endl;
+        }
+        exit(0);
+    }
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
     _iproc = iproc;
     _jproc = jproc;
@@ -288,7 +305,13 @@ Case::Case(std::string file_name, int argn, char **args) {
     if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
     }
-    
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    if (_process_rank == 0) {
+        output_log(_datfile_name, nu, UI, VI, PI, GX, GY, xlength, ylength, dt, imax, jmax, gamma, omg, tau, itermax,
+                   eps, TI, alpha, beta, num_walls, my_rank);
+    }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    if (_process_rank == 0) {
     std::cout << "KILL PROGRAM" << std::endl;
 }
 
@@ -365,16 +388,40 @@ void Case::simulate() {
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
-    
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+     Case::output_vtk(timestep, my_rank);
+    std::ofstream output;
+    int progress, last_progress;
+
+    if (_process_rank == 0) {
+        std::string str = _dict_name + "_run_log_" + std::to_string(my_rank) + ".log";
+
+        output.open(str, std::ios_base::app);
+        output << "\n\nIteration Log:\n";
+        std::cout << "Simulation is Running!\nPlease Refer to " << _dict_name << "_run_log_" << my_rank
+                  << ".log for Simulation log!\n";
+        // Simulation Progress
+        if (Case::_energy_eq == "on") {
+            std::cout << "\nEnergy Equation is On\n";
+        }
+    }
+ /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
     while (t < _t_end) {
 	    
 	    dt = _field.calculate_dt(_grid, _energy_eq);
+        dt = Communication::reduce_min(dt);
 	    
 	    if (_energy_eq == true){
 	    	_field.calculate_temperatures(_grid, _discretization);
+             // communicate temperature
+            Communication::communicate(_field.t_matrix(), domain);
 	    }
 	    
 	    _field.calculate_fluxes(_grid, _discretization, _energy_eq);
+        // communicate fluxes
+        Communication::communicate(_field.f_matrix(), domain);
+        Communication::communicate(_field.g_matrix(), domain);
 	    for (auto const& boundary : _boundaries){
 	    	boundary->apply(_field, _energy_eq);
 	    }
@@ -385,6 +432,13 @@ void Case::simulate() {
 	    double res = _pressure_solver->solve(_field, _grid, _boundaries); 
 	    while ((res > _tolerance) and (iter < _max_iter)) {
 	    	res = _pressure_solver->solve(_field, _grid, _boundaries);
+            // weighted addition of residuals
+            err = Communication::reduce_sum(err);
+            fluid_cells = _grid.fluid_cells().size();
+            fluid_cells = Communication::reduce_sum(fluid_cells);
+            err = std::sqrt(err / fluid_cells);
+            // communicate pressures
+            Communication::communicate(_field.p_matrix(), domain);
 	    	for (auto const& boundary : _boundaries){
 	    		boundary->apply(_field, _energy_eq);
 	    	}
@@ -399,14 +453,67 @@ void Case::simulate() {
 	    }
 	    
 	    _field.calculate_velocities(_grid);
+        Communication::communicate(_field.u_matrix(), domain);
+        Communication::communicate(_field.v_matrix(), domain);
 	    
 	    t = t + dt;
-    	    timestep = timestep + 1;
-    	    output_vtk(timestep);
+    	timestep = timestep + 1;
+    	//output_vtk(timestep);
+ //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+        if (_process_rank == 0) {
+            output << std::setprecision(4) << std::fixed;
+        }
+        if (t - output_counter * _output_freq >= 0) {
+            Case::output_vtk(timestep, my_rank);
+            if (_process_rank == 0) {
+                output << "Time: " << t << " Residual: " << err << " PPE Iterations: " << iter_count << std::endl;
+                if (iter_count == _max_iter || std::isnan(err)) {
+                    std::cout << "The PPE Solver didn't converge for Time = " << t
+                              << " Please check the log file and increase max iterations or other parameters for "
+                                 "convergence"
+                              << "\n";
+                }
+            }
+            output_counter += 1;
+        }
+        // Printing Simulation Progress
+        if (_process_rank == 0) {
+            progress = t / t_end * 100;
+            if (progress % 10 == 0 && progress != last_progress) {
+                std::cout << "Time Step: " << timestep << " Residue: " << err << " PPE Iterations: " << iter_count
+                          << std::endl;
+                std::cout << "[";
+                for (int i = 0; i < progress / 10; i++) {
+                    std::cout << "=====";
+                }
+                if (progress == 100)
+                    std::cout << "]";
+                else
+                    std::cout << ">";
+                std::cout << progress << "%\r";
+                std::cout.flush();
+                last_progress = progress;
+            }
+        }       
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
     }
+    if (t_end !=
+        (output_counter - 1) * _output_freq) // Recording at t_end if the output frequency is not a multiple of t_end
+    {
+        Case::output_vtk(timestep, my_rank);
+        if (_process_rank == 0) {
+            output << "Time Step: " << timestep << " Residue: " << err << " PPE Iterations: " << iter_count
+                   << std::endl;
+        }
+        output_counter += 1;
+    }
+    if (_process_rank == 0) {
+        std::cout << "\nSimulation has ended\n";
+    }
+    output.close();
 }
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
 void Case::output_vtk(int timestep, int my_rank) {
     // Create a new structured grid
@@ -513,10 +620,15 @@ void Case::output_vtk(int timestep, int my_rank) {
     // Write Grid
     vtkSmartPointer<vtkStructuredGridWriter> writer = vtkSmartPointer<vtkStructuredGridWriter>::New();
 
+    // // Create Filename
+    // std::string outputname =
+    //     _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
     // Create Filename
-    std::string outputname =
-        _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
-
+    std::string outputname = _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "_" +
+                             std::to_string(_process_rank) + "." + std::to_string(timestep) +
+                             ".vtk"; // my_rank is the user's input and _process_rank is the process rank
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
     writer->SetFileName(outputname.c_str());
     writer->SetInputData(structuredGrid);
     writer->Write();
@@ -530,4 +642,48 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
     domain.jmax = jmax_domain + 2;
     domain.size_x = imax_domain;
     domain.size_y = jmax_domain;
+
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+void Case::output_log(std::string dat_file_name, double nu, double UI, double VI, double PI, double GX, double GY,
+                      double xlength, double ylength, double dt, double imax, double jmax, double gamma, double omg,
+                      double tau, double itermax, double eps, double TI, double alpha, double beta, double num_walls,
+                      int my_rank) {
+
+    std::string str = _dict_name + "_run_log_" + std::to_string(my_rank) + ".log";
+    std::stringstream stream;
+    std::ofstream output(str);
+
+    output << "Log File for : " << dat_file_name << "\n";
+    output << "Simulation Parameters:\n";
+    output << "xlength : " << xlength << "\n";
+    output << "ylength : " << ylength << "\n";
+    output << "nu : " << nu << "\n";
+    output << "t_end : " << _t_end << "\n";
+    output << "dt : " << dt << "\n";
+    output << "omg : " << omg << "\n";
+    output << "eps : " << eps << "\n";
+    output << "tau : " << tau << "\n";
+    output << "gamma : " << gamma << "\n";
+    output << "dt_value : " << _output_freq << "\n";
+    output << "UI : " << UI << "\n";
+    output << "VI : " << VI << "\n";
+    output << "GX : " << GX << "\n";
+    output << "GY : " << GY << "\n";
+    output << "PI : " << PI << "\n";
+    output << "itermax : " << itermax << "\n";
+    output << "Energy Equation : " << _energy_eq << "\n";
+    output << "Number of processes in x-direction : " << _iproc << "\n";
+    output << "Number of processes in y-direction : " << _jproc << "\n";
+    output << "Total number of process : " << _size << "\n";
+    if (_energy_eq == "on") {
+        output << "Temp Initial : " << TI << "\n";
+        output << "alpha : " << alpha << "\n";
+        output << "beta : " << beta << "\n";
+        output << "No of Temperature walls: " << num_walls << "\n";
+        
+    }
+
+    output.close();
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
