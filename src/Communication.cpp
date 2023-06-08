@@ -1,4 +1,3 @@
-
 #include <mpi.h>
 #include <algorithm>
 #include <iostream>
@@ -337,7 +336,7 @@ static double Communicate::reduce_sum(const Matrix<double> &A){
 	*std::accumulate(vec.begin(),vec.end(), localSum);
 	double globalSum;
 	MPI_Allreduce(&localSum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	return globalMin;
+	return globalSum;
 }
 
 
