@@ -23,10 +23,13 @@ class Case {
      * Reads input file, creates Fields, Grid, Boundary, Solver and sets
      * Discretization parameters Creates output directory
      *
-     * @param[in] Input file name
+     * @param file_name for the input parameters
+     * @param argn
+     * @param args
+     * @param my_rank the rank of the parallel process
+     * @param size total number of processes
      */
-    Case(std::string file_name, int argn, char **args);
-    //Case(std::string file_name);
+    Case(std::string file_name, int argn, char **args, int my_rank = 0, int size = 1);
 
     /**
      * @brief Main function to simulate the flow until the end time.
@@ -53,6 +56,8 @@ class Case {
     
     int _iproc;
     int _jproc;
+    int _my_rank;
+    int _size;
 
     /// Simulation time
     double _t_end;
@@ -93,4 +98,10 @@ class Case {
     void output_vtk(int t, int my_rank = 0);
 
     void build_domain(Domain &domain, int imax_domain, int jmax_domain);
+
+    void output_log(std::string dat_file_name, double nu, double UI, double VI, double PI, double GX, double GY,
+                    double xlength, double ylength, double dt, double imax, double jmax, double gamma, double omg,
+                    double tau, double itermax, double eps, double TI, double alpha, double beta, double num_walls
+                    );
+    std::ofstream simulation_log_file();
 };

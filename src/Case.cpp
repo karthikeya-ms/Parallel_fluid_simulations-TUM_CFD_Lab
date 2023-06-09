@@ -31,7 +31,7 @@ namespace filesystem = std::experimental::filesystem;
 #include <vtkTuple.h>
 #include <limits>
 
-Case::Case(std::string file_name, int argn, char **args) {
+Case::Case(std::string file_name, int argn, char **, int my_rank, int size) {
 //Case::Case(std::string file_name) {
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
@@ -115,12 +115,12 @@ Case::Case(std::string file_name, int argn, char **args) {
     _datfile_name = file_name;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    _process_rank = process_rank;
+    _my_rank = my_rank;
     _size = size;
 
     if (_iproc * _jproc != _size) {
         Communication::finalize();
-        if (_process_rank == 0) {
+        if (_my_rank == 0) {
             std::cerr << "please check your iproc(number of processes for x-direction) and jproc(number of processes "
                          "for y-direction). Their product should be the total number of processes for the problem"
                       << std::endl;
@@ -306,14 +306,15 @@ Case::Case(std::string file_name, int argn, char **args) {
         _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    if (_process_rank == 0) {
+    if (_my_rank == 0) {
         output_log(_datfile_name, nu, UI, VI, PI, GX, GY, xlength, ylength, dt, imax, jmax, gamma, omg, tau, itermax,
-                   eps, TI, alpha, beta, num_walls, my_rank);
+                   eps, TI, alpha, beta, num_walls);
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    if (_process_rank == 0) {
+    if (_my_rank == 0) {
     std::cout << "KILL PROGRAM" << std::endl;
 }
+
 
 void Case::set_file_names(std::string file_name) {
     std::string temp_dir;
@@ -390,16 +391,16 @@ void Case::simulate() {
     double output_counter = 0.0;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-     Case::output_vtk(timestep, my_rank);
+     Case::output_vtk(timestep);
     std::ofstream output;
     int progress, last_progress;
 
-    if (_process_rank == 0) {
-        std::string str = _dict_name + "_run_log_" + std::to_string(my_rank) + ".log";
+    if (_my_rank == 0) {
+        std::string str = _dict_name + "_run_log_" + ".log";
 
         output.open(str, std::ios_base::app);
         output << "\n\nIteration Log:\n";
-        std::cout << "Simulation is Running!\nPlease Refer to " << _dict_name << "_run_log_" << my_rank
+        std::cout << "Simulation is Running!\nPlease Refer to " << _dict_name << "_run_log_"
                   << ".log for Simulation log!\n";
         // Simulation Progress
         if (Case::_energy_eq == "on") {
@@ -460,12 +461,12 @@ void Case::simulate() {
     	timestep = timestep + 1;
     	//output_vtk(timestep);
  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
-        if (_process_rank == 0) {
+        if (_my_rank == 0) {
             output << std::setprecision(4) << std::fixed;
         }
         if (t - output_counter * _output_freq >= 0) {
-            Case::output_vtk(timestep, my_rank);
-            if (_process_rank == 0) {
+            Case::output_vtk(timestep);
+            if (_my_rank == 0) {
                 output << "Time: " << t << " Residual: " << err << " PPE Iterations: " << iter_count << std::endl;
                 if (iter_count == _max_iter || std::isnan(err)) {
                     std::cout << "The PPE Solver didn't converge for Time = " << t
@@ -477,7 +478,7 @@ void Case::simulate() {
             output_counter += 1;
         }
         // Printing Simulation Progress
-        if (_process_rank == 0) {
+        if (_my_rank == 0) {
             progress = t / t_end * 100;
             if (progress % 10 == 0 && progress != last_progress) {
                 std::cout << "Time Step: " << timestep << " Residue: " << err << " PPE Iterations: " << iter_count
@@ -500,14 +501,14 @@ void Case::simulate() {
     if (t_end !=
         (output_counter - 1) * _output_freq) // Recording at t_end if the output frequency is not a multiple of t_end
     {
-        Case::output_vtk(timestep, my_rank);
-        if (_process_rank == 0) {
+        Case::output_vtk(timestep);
+        if (_my_rank == 0) {
             output << "Time Step: " << timestep << " Residue: " << err << " PPE Iterations: " << iter_count
                    << std::endl;
         }
         output_counter += 1;
     }
-    if (_process_rank == 0) {
+    if (_my_rank == 0) {
         std::cout << "\nSimulation has ended\n";
     }
     output.close();
@@ -515,7 +516,7 @@ void Case::simulate() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-void Case::output_vtk(int timestep, int my_rank) {
+void Case::output_vtk(int timestep) {
     // Create a new structured grid
     vtkSmartPointer<vtkStructuredGrid> structuredGrid = vtkSmartPointer<vtkStructuredGrid>::New();
 
@@ -625,9 +626,9 @@ void Case::output_vtk(int timestep, int my_rank) {
     //     _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
     // Create Filename
-    std::string outputname = _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "_" +
-                             std::to_string(_process_rank) + "." + std::to_string(timestep) +
-                             ".vtk"; // my_rank is the user's input and _process_rank is the process rank
+    std::string outputname = _dict_name + '/' + _case_name + "_" + "_" +
+                             std::to_string(_my_rank) + "." + std::to_string(timestep) +
+                             ".vtk"; // 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
     writer->SetFileName(outputname.c_str());
     writer->SetInputData(structuredGrid);
@@ -647,10 +648,9 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 void Case::output_log(std::string dat_file_name, double nu, double UI, double VI, double PI, double GX, double GY,
                       double xlength, double ylength, double dt, double imax, double jmax, double gamma, double omg,
-                      double tau, double itermax, double eps, double TI, double alpha, double beta, double num_walls,
-                      int my_rank) {
+                      double tau, double itermax, double eps, double TI, double alpha, double beta, double num_walls) {
 
-    std::string str = _dict_name + "_run_log_" + std::to_string(my_rank) + ".log";
+    std::string str = _dict_name + "_run_log_" + ".log";
     std::stringstream stream;
     std::ofstream output(str);
 
