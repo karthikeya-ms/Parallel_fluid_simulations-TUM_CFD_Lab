@@ -64,7 +64,10 @@ Case::Case(std::string file_name, int argn, char **args) {
     int iproc{1};    /* number of processors used to parallelize simulation in x-axis */
     int jproc{1};    /* number of processors used to parallelize simulation in x-axis */
     
-
+    int size, my_rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    
     if (file.is_open()) {
 
         std::string var;
@@ -116,55 +119,59 @@ Case::Case(std::string file_name, int argn, char **args) {
     _jproc = jproc;
     
     if ((_iproc == 1) and (_jproc == 1)){
-    	std::string question;
-	while ((question != "yes") and (question != "no")){
-		std::cout << "Specified number of processors on x and y-axis set to 1. Running simulation in sequential mode (only one processor), are you sure you want to continue? Please type 'yes' or 'no' to continue. If using parallelization (more processors) runtime can be significantly reduced:\n";
-		std::cin >> question;
-	}
-	if (question == "no"){
-		std::ofstream outFile(file_name, std::ios::app); // Open file in append mode
-
-	        if (!outFile) {
-		    std::cerr << "Error opening file " << file_name << " to add iproc and jproc parameters." << std::endl;
-		    exit(1);
-	        }
-
-		std::cout << "Please input the number of processes for the x-axis:\n";
-		std::cin >> iproc;
-		
-		while (!std::cin.good())
-		{
-		    std::cin.clear();
-		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-		    std::cout << "Please input the number of processes for the x-axis:\n";
-		    std::cin >> iproc;
+    	if (my_rank == 0){
+	    	std::string question;
+		while ((question != "yes") and (question != "no")){
+			std::cout << "Specified number of processors on x and y-axis set to 1. Running simulation in sequential mode (only one processor), are you sure you want to continue? Please type 'yes' or 'no' to continue. If using parallelization (more processors) runtime can be significantly reduced:\n";
+			std::cin >> question;
 		}
-		
-		std::cout << "Please input the number of processes for the y-axis:\n";
-		std::cin >> jproc;
-		while (!std::cin.good())
-		{
-		    std::cin.clear();
-		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-		    std::cout << "Please input the number of processes for the y-axis:\n";
-		    std::cin >> jproc;
+		if (question == "no"){
+			std::ofstream outFile(file_name, std::ios::app); // Open file in append mode
+
+			if (!outFile) {
+			    std::cerr << "Error opening file " << file_name << " to add iproc and jproc parameters." << std::endl;
+			    exit(1);
+			}
+
+			std::cout << "Please input the number of processes for the x-axis:\n";
+			std::cin >> iproc;
+			
+			while (!std::cin.good())
+			{
+			    std::cin.clear();
+			    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+			    std::cout << "Please input the number of processes for the x-axis:\n";
+			    std::cin >> iproc;
+			}
+			
+			std::cout << "Please input the number of processes for the y-axis:\n";
+			std::cin >> jproc;
+			while (!std::cin.good())
+			{
+			    std::cin.clear();
+			    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+			    std::cout << "Please input the number of processes for the y-axis:\n";
+			    std::cin >> jproc;
+			}
+			std::string lineToAdd1 = "iproc          " + std::to_string(iproc);
+			std::string lineToAdd2 = "jproc          " + std::to_string(jproc);
+
+			outFile << lineToAdd1 << std::endl; // Write the line to the file
+			outFile << lineToAdd2 << std::endl;
+
+			outFile.close(); // Close the file
+		    
+		    	std::cout << "Thank you. Successfully added parameters to '.dat' file with " << iproc << " processors in x-axis, and " << jproc << " processors in y-axis." << std::endl;
+		    	std::cout << "Proceeding to terminate program. Please run again the scrip using the following command: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "'" << std::endl;
+		    	exit(0);	
 		}
-		std::string lineToAdd1 = "iproc          " + std::to_string(iproc);
-		std::string lineToAdd2 = "jproc          " + std::to_string(jproc);
-
-	        outFile << lineToAdd1 << std::endl; // Write the line to the file
-	        outFile << lineToAdd2 << std::endl;
-
-	        outFile.close(); // Close the file
-	    
-	    	std::cout << "Thank you. Successfully added parameters to '.dat' file with " << iproc << " processors in x-axis, and " << jproc << " processors in y-axis." << std::endl;
-	    	std::cout << "Proceeding to terminate program. Please run again the scrip using the following command: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "'" << std::endl;
-	    	exit(0);	
-	}
-	else {
-		std::cout << "Proceeding to run simulation with only one processor." << std::endl;
+		else {
+			std::cout << "Proceeding to run simulation with only one processor." << std::endl;
+		}
 	}
     }
+    
+    MPI_Barrier(MPI_COMM_WORLD);
 
     std::map<int, double> wall_vel;
     std::map<int, double> wall_temp;
@@ -184,13 +191,9 @@ Case::Case(std::string file_name, int argn, char **args) {
 
     // Set file names for geometry file and output directory
     set_file_names(file_name);
-
-    int size, my_rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     
     if (_iproc*_jproc != size){
-    	std::cout << "Warning: iproc, jproc and number of processes specified at runtime do not match: iproc = "<< iproc << ", jproc = " << jproc << " and size = " << size << ". Terminating program\nPlease make sure to run the code using the following command line: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "', or change the values of iproc and jproc in the '.dat' file such that iproc*jproc = size." << std::endl;
+    	std::cout << "Warning: iproc, jproc and number of processes specified at runtime do not match: iproc = "<< iproc << ", jproc = " << jproc << " and size = " << size << ". Terminating program\nPlease make sure to run the code using the following command line: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "', or change the values of iproc and jproc in the '.dat' file such that iproc*jproc = " << size << "." << std::endl;
     	exit(1);
     }
     
@@ -202,25 +205,25 @@ Case::Case(std::string file_name, int argn, char **args) {
     int jmin_local;
     int jmax_local;
     
-    int my_x = my_rank%_iproc;
-    int my_y = (my_rank - my_x)/_iproc;
+    int my_x = (my_rank)%_iproc + 1;
+    int my_y = ((my_rank + 1) - my_x)/_iproc + 1;
     
     if ((imax % _iproc) == 0){ //All processors take same number of tiles (x-axis).
-	imin_local = my_x*(imax/_iproc) + 1;
-	imax_local = (my_x + 1)*(imax/_iproc);
+	imin_local = (my_x - 1)*(imax/_iproc) + 1;
+	imax_local = (my_x)*(imax/_iproc);
 	
 	if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
-		jmin_local = my_y*(jmax/_jproc) + 1;
-		jmax_local = (my_y + 1)*(jmax/_jproc);
+		jmin_local = (my_y - 1)*(jmax/_jproc) + 1;
+		jmax_local = (my_y)*(jmax/_jproc);
 	}
 	else{ //Not all processors take same number of tiles (y-axis).
-	    	if (my_y < (jmax % _jproc)){ //Processors with an extra tile (y-axis).
-	    		jmin_local = my_y*(jmax/_jproc) + (my_y + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (my_y + 1);
+	    	if (my_y <= (jmax % _jproc)){ //Processors with an extra tile (y-axis).
+	    		jmin_local = (my_y - 1)*(jmax/_jproc) + (my_y);
+			jmax_local = (my_y)*(jmax/_jproc) + (my_y);
 	 	}
 	 	else{ //Processors with no extra tile (y-axis).
-	 		jmin_local = my_y*(jmax/_jproc) + (jmax % _jproc + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (jmax % _jproc);
+	 		jmin_local = (my_y - 1)*(jmax/_jproc) + (jmax % _jproc + 1);
+			jmax_local = (my_y)*(jmax/_jproc) + (jmax % _jproc);
 	 	}
 	}
 	
@@ -228,26 +231,26 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     
     else{ //Not all processors take same number of tiles (x-axis).
-    	if (my_x < (imax % _iproc)){ //Processors with an extra tile (x-axis).
-    		imin_local = my_x*(imax/_iproc) + (my_x + 1);
-		imax_local = (my_x + 1)*(imax/_iproc) + (my_x + 1);
+    	if (my_x <= (imax % _iproc)){ //Processors with an extra tile (x-axis).
+    		imin_local = (my_x - 1)*(imax/_iproc) + (my_x);
+		imax_local = (my_x)*(imax/_iproc) + (my_x);
  	}
  	else{ //Processors with no extra tile (x-axis).
- 		imin_local = my_x*(imax/_iproc) + (imax % _iproc + 1);
-		imax_local = (my_x + 1)*(imax/_iproc) + (imax % _iproc);
+ 		imin_local = (my_x - 1)*(imax/_iproc) + (imax % _iproc + 1);
+		imax_local = (my_x)*(imax/_iproc) + (imax % _iproc);
  	}
  	if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
-		jmin_local = my_y*(jmax/_jproc) + 1;
-		jmax_local = (my_y + 1)*(jmax/_jproc);
+		jmin_local = (my_y - 1)*(jmax/_jproc) + 1;
+		jmax_local = (my_y)*(jmax/_jproc);
 	}
 	else{ //Not all processors take same number of tiles (y-axis).
-	    	if (my_y < (jmax % _jproc)){ //Processors with an extra tile (y-axis).
-	    		jmin_local = my_y*(jmax/_jproc) + (my_y + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (my_y + 1);
+	    	if (my_y <= (jmax % _jproc)){ //Processors with an extra tile (y-axis).
+	    		jmin_local = (my_y - 1)*(jmax/_jproc) + (my_y);
+			jmax_local = (my_y)*(jmax/_jproc) + (my_y);
 	 	}
 	 	else{ //Processors with no extra tile (y-axis).
-	 		jmin_local = my_y*(jmax/_jproc) + (jmax % _jproc + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (jmax % _jproc);
+	 		jmin_local = (my_y - 1)*(jmax/_jproc) + (jmax % _jproc + 1);
+			jmax_local = (my_y)*(jmax/_jproc) + (jmax % _jproc);
 	 	}
 	}
     }
