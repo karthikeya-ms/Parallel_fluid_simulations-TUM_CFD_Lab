@@ -63,6 +63,8 @@ Case::Case(std::string file_name, int argn, char **args) {
     std::string geo_file{"NONE"};     /* String with the name of the geometry file loaded */
     int iproc{1};    /* number of processors used to parallelize simulation in x-axis */
     int jproc{1};    /* number of processors used to parallelize simulation in x-axis */
+    int _argn = argn;
+    char **_args = args;
     
 
     if (file.is_open()) {
@@ -361,7 +363,8 @@ void Case::set_file_names(std::string file_name) {
  * For information about the classes and functions, you can check the header files.
  */
 void Case::simulate() {
-
+    
+    MPI_Init(&_argn, &_args);
     int size, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -448,6 +451,7 @@ void Case::simulate() {
     	    timestep = timestep + 1;
     	    output_vtk(timestep);
     }
+MPI_Finalize();
 }
 
 
