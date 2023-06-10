@@ -68,6 +68,8 @@ class Case {
 
     /// Maximum number of iterations for the solver
     int _max_iter;
+    int _argn;
+    char **_args;
 
     /**
      * @brief Creating file names from given input data file
