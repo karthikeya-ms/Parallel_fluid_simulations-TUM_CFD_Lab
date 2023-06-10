@@ -10,6 +10,7 @@
 #include "Fields.hpp"
 #include "Grid.hpp"
 #include "PressureSolver.hpp"
+#include "Communication.hpp"
 
 /**
  * @brief Class to hold and orchestrate the simulation flow.
@@ -25,8 +26,8 @@ class Case {
      *
      * @param[in] Input file name
      */
-    Case(std::string file_name, int argn, char **args);
-    //Case(std::string file_name);
+    //Case(std::string file_name, int argn, char **args);
+    Case(std::string file_name);
 
     /**
      * @brief Main function to simulate the flow until the end time.
@@ -50,9 +51,6 @@ class Case {
     std::string _prefix;
     
     bool _energy_eq{false};
-    
-    int _iproc;
-    int _jproc;
 
     /// Simulation time
     double _t_end;
