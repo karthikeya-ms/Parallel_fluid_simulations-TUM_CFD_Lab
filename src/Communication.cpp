@@ -7,7 +7,7 @@ Communication::Communication(int iproc, int jproc, int imax, int jmax, int argn,
 	
 	}
 	
-static void Communication::Communicate(const Matrix<double> &A) {
+static void Communication::Communicate(const Matrix<double> &A, Domain &domain) {
 
 	MPI_Init(&argc, &argv);
 	int size = _iproc*_jproc;
@@ -16,22 +16,14 @@ static void Communication::Communicate(const Matrix<double> &A) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	
 	//Calculating the omega (i index (0m_i)) and omega j (j index (om_j)) of the sub-domain
-	int _om_i = (_myrank % _iproc) + 1;
-        int _om_j = ((_myrank + 1 - _om_i)/_iproc) + 1;
+	int _om_i = ((_myrank) % _iproc) + 1;
+        int _om_j = (((_myrank + 1) - _om_i)/_iproc) + 1;
         
-        int _il{0}; //i index of the sub-domain left side cells
-        int _ir{0}; //i index of the sub-domain right side cells
-        int _jb{0}; //j index of the sub-domain bottom side cells
-        int _jt{0}; //j index of the sub-domain top side cells
+        int _il = domain.imin; //i index of the sub-domain left side cells
+        int _ir = domain.imax; //i index of the sub-domain right side cells
+        int _jb = domain.jmin; //j index of the sub-domain bottom side cells
+        int _jt = domain.jmax; //j index of the sub-domain top side cells
         
-        il = (om_i - 1) * (_imax/_iproc) + 1;
-        if(_om_i != _iproc) {_ir = (_om_i) * (_imax/_iproc);}
-        else {_ir = _imax;}
-	
-	_jb = (_om_j - 1) * (_jmax/_jproc) + 1;
-  	if(_om_j != _jproc) {_jt = (_om_j) * (_jmax/_jproc);}
-  	else {_jt = _jmax;}
-  	
   	int l_rank{0}; //Rank of the left neighbour sub domain
   	int r_rank{0}; //Rank of the right neighbour sub domain
   	int b_rank{0}; //Rank of the bottom neighbour sub domain
@@ -47,8 +39,8 @@ static void Communication::Communicate(const Matrix<double> &A) {
 	if(_jt == _jmax)  {t_rank = MPI_PROC_NULL;}
   	else              {t_rank = _myrank + _iproc;}
   	
-  	int x_dim = _ir - _il + 1;
-	int y_dim = _jt - _jb + 1;
+  	int x_dim = domain.domain_size_x;
+	int y_dim = domain.domain_size_y;
 	double *SDatax[x_dim] = {0}; //Send Buffer in the x direction for top and bottom cells
 	double *SDatay[y_dim] = {0}; //Send Buffer in the y direction for left and right cells
 	double *RDatax[x_dim] = {0}; //Recieve Buffer in the x direction for top and bottom cells
