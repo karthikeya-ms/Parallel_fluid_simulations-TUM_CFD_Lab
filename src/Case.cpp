@@ -31,7 +31,7 @@ namespace filesystem = std::experimental::filesystem;
 #include <vtkTuple.h>
 #include <limits>
 
-Case::Case(std::string file_name, int argn, char **args, size, my_rank) {
+Case::Case(std::string file_name, int argn, char **args) {
 //Case::Case(std::string file_name) {
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
@@ -114,15 +114,15 @@ Case::Case(std::string file_name, int argn, char **args, size, my_rank) {
     }
     file.close();
 
-    _datfile_name = file_name;
+    //_datfile_name = file_name;
  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
 //This entire code is to add the no of processors to x and y axis data in the .dat file.    
     _iproc = iproc;
     _jproc = jproc;
-   // _my_rank = my_rank;
-   // _size = size;
+    _my_rank = my_rank;
+    _size = size;
 
-    if (my_rank == 0) {// Messages displayed only by the root process
+    if (_my_rank == 0) {// Messages displayed only by the root process
         if ((_iproc == 1) and (_jproc == 1)){
             std::string question;
         while ((question != "yes") and (question != "no")){
@@ -204,13 +204,13 @@ Case::Case(std::string file_name, int argn, char **args, size, my_rank) {
 //This code snippet decomposes the domain  
     
     if (_iproc*_jproc != size){
-        if (my_rank == 0) {// Message displayed only by the root process
+        if (_my_rank == 0) {// Message displayed only by the root process
     	    std::cout << "Warning: iproc, jproc and number of processes specified at runtime do not match. Terminating program\nPlease make sure to run the code using the following command line: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "'" << std::endl;
         }
         exit(1);
     }
     
-    if (my_rank == 0) {// Message displayed only by the root process
+    if (_my_rank == 0) {// Message displayed only by the root process
         std::cout << "iproc: " << _iproc << ". jproc: " << _jproc << ". Total number of threads: " << size << std::endl;
         std::cout << "Total domain should have the following dimentions (number of cells, in x and y: (" << imax << ", " << jmax << ")." << std::endl;
     }
@@ -224,7 +224,7 @@ Case::Case(std::string file_name, int argn, char **args, size, my_rank) {
     int my_x = my_rank%_iproc;
     int my_y = (my_rank - my_x)/_iproc;
 
-    if (my_rank == 0) {// Domain Decomposition done in the root process
+    if (_my_rank == 0) {// Domain Decomposition done in the root process
     
         if ((imax % _iproc) == 0){ //All processors take same number of tiles (x-axis).
         imin_local = my_x*(imax/_iproc) + 1;
@@ -736,3 +736,4 @@ if (my_rank == 0) {// Message displayed only by the root process
 }
 */
 
+///
