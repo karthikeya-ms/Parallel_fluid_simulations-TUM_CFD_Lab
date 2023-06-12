@@ -7,25 +7,114 @@
 #include <sstream>
 #include <vector>
 
-Grid::Grid(std::string geom_name, Domain &domain) {
+Grid::Grid(std::string geom_name, Domain &domain, int _iproc, int _jproc, int imax, int jmax ) {
 
     int size, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     _domain = domain;
+    int *buffer[domain.jmax] = {0};
 
     _cells = Matrix<Cell>(_domain.size_x + 2, _domain.size_y + 2);
 
     if (!geom_name.compare("NONE")) {
         std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2,
                                                     std::vector<int>(_domain.domain_size_y + 2, 0));
+        
         if (my_rank == 0){
+        std::vector<std::vector<int>> geometry_master(imax+ 2,
+                                                    std::vector<int>(jmax + 2, 0));
         	parse_geometry_file(geom_name, geometry_data);
-        }
+        	for (int i = _domain.imin - 1; i < _domain.imax + 1; ++i){
+			for(int j = _domain.jmin - 1; j < _domain.jmax + 1; ++j){
+				geometry_data[i][j] = geometry_master[i][j];
+			}
+        		 
+		} 
+		
+        	for(int k = 1; k < size; ++k){
+        	
+			int imin_local;
+			int imax_local;
+			int jmin_local;
+			int jmax_local;
+			
+			int my_x = (k)%_iproc + 1;
+			int my_y = ((k + 1) - my_x)/_iproc + 1;
+			if ((imax % _iproc) == 0){ //All processors take same number of tiles (x-axis).
+				imin_local = (my_x - 1)*(imax/_iproc) + 1;
+				imax_local = (my_x)*(imax/_iproc);
+				
+				if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
+					jmin_local = (my_y - 1)*(jmax/_jproc) + 1;
+					jmax_local = (my_y)*(jmax/_jproc);
+				}
+				else{ //Not all processors take same number of tiles (y-axis).
+				    	if (my_y <= (jmax % _jproc)){ //Processors with an extra tile (y-axis).
+				    		jmin_local = (my_y - 1)*(jmax/_jproc) + (my_y);
+						jmax_local = (my_y)*(jmax/_jproc) + (my_y);
+				 	}
+				 	else{ //Processors with no extra tile (y-axis).
+				 		jmin_local = (my_y - 1)*(jmax/_jproc) + (jmax % _jproc + 1);
+						jmax_local = (my_y)*(jmax/_jproc) + (jmax % _jproc);
+				 	}
+				}
+				
+				    
+		    }
+		    
+		    else{ //Not all processors take same number of tiles (x-axis).
+		    	if (my_x <= (imax % _iproc)){ //Processors with an extra tile (x-axis).
+		    		imin_local = (my_x - 1)*(imax/_iproc) + (my_x);
+				imax_local = (my_x)*(imax/_iproc) + (my_x);
+		 	}
+		 	else{ //Processors with no extra tile (x-axis).
+		 		imin_local = (my_x - 1)*(imax/_iproc) + (imax % _iproc + 1);
+				imax_local = (my_x)*(imax/_iproc) + (imax % _iproc);
+		 	}
+		 	if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
+				jmin_local = (my_y - 1)*(jmax/_jproc) + 1;
+				jmax_local = (my_y)*(jmax/_jproc);
+			}
+			else{ //Not all processors take same number of tiles (y-axis).
+			    	if (my_y <= (jmax % _jproc)){ //Processors with an extra tile (y-axis).
+			    		jmin_local = (my_y - 1)*(jmax/_jproc) + (my_y);
+					jmax_local = (my_y)*(jmax/_jproc) + (my_y);
+			 	}
+			 	else{ //Processors with no extra tile (y-axis).
+			 		jmin_local = (my_y - 1)*(jmax/_jproc) + (jmax % _jproc + 1);
+					jmax_local = (my_y)*(jmax/_jproc) + (jmax % _jproc);
+			 	}
+			}
+	    	    }
+		   
+		for (int i = imin_local - 1; i < imax_local + 1; ++i){
+		        int s{0};
+			for(int j = jmin_local - 1; j < jmax_local + 1; ++j){
+				
+				*buffer[s] = geometry_data[i][j];
+				s++;
+			}
+        		MPI_Send(*buffer, s, MPI_INT, k, 1, MPI_COMM_WORLD);
+        		 
+		} 
+        	
+        	}
+            }
+            else{
+            	MPI_Recv(*buffer, domain.jmax, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            	for (int j = _domain.jmin - 1; j < _domain.jmax + 1; ++j){
+            		for (int i = _domain.imin - 1; i < domain.imax + 1; ++i){
+            			int s = 0;
+            			geometry_data[i][j] = *buffer[s];
+            			s++;
+            		}
+            	}
+            }
         assign_cell_types(geometry_data);
-    } else {
-        build_lid_driven_cavity();
-    }
+        } else {
+            build_lid_driven_cavity();
+        }
 }
 
 
@@ -57,8 +146,14 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         { i = 0; }
         for (int i_geom = _domain.imin; i_geom < _domain.imax; ++i_geom) {
             if (geometry_data.at(i_geom).at(j_geom) == 0) {
-                _cells(i, j) = Cell(i, j, cell_type::FLUID);
-                _fluid_cells.push_back(&_cells(i, j));
+            	if( (i == 0) || (j == 0) || (i == _domain.imax - 1) || (j == _domain.jmax - 1)){
+            		_cells(i, j) = Cell(i, j, cell_type::FLUID, true);
+                	_fluid_cells.push_back(&_cells(i, j));
+            	}
+            	else{
+                	_cells(i, j) = Cell(i, j, cell_type::FLUID);
+                	_fluid_cells.push_back(&_cells(i, j));
+            	}
             } 
             else if (geometry_data.at(i_geom).at(j_geom) == LidDrivenCavity::moving_wall_id) {
                 _cells(i, j) = Cell(i, j, cell_type::MOVING_WALL, geometry_data.at(i_geom).at(j_geom));
