@@ -41,8 +41,8 @@ void Fields::calculate_fluxes(Grid &grid, Discretization &discretization, bool e
 		_F(i_idx, j_idx) = _U(i_idx, j_idx) + _dt*(_nu*discretization.diffusion(_U, i_idx, j_idx) + discretization.convection_U(_U, _V, i_idx, j_idx)) + hydro_term_x;
 		_G(i_idx, j_idx) = _V(i_idx, j_idx) + _dt*(_nu*discretization.diffusion(_V, i_idx, j_idx) + discretization.convection_V(_U, _V, i_idx, j_idx)) + hydro_term_y;
 	}
-	communication.Communicate(_F);
-	communication.Communicate(_G);
+	communication.communicate(_F);
+	communication.communicate(_G);
 	
 }
 
@@ -69,8 +69,8 @@ void Fields::calculate_velocities(Grid &grid, Communication &communication) {
 		_U(i_idx, j_idx) = _F(i_idx, j_idx) - _dt*dPdx(i_idx, j_idx, grid);
 		_V(i_idx, j_idx) = _G(i_idx, j_idx) - _dt*dPdy(i_idx, j_idx, grid);
 	}
-	communication.Communicate(_U);
-	communication.Communicate(_V);
+	communication.communicate(_U);
+	communication.communicate(_V);
 }
 
 void Fields::calculate_temperatures(Grid &grid, Discretization &discretization, Communication &communication){
@@ -84,7 +84,7 @@ void Fields::calculate_temperatures(Grid &grid, Discretization &discretization, 
 		new_T(i_idx, j_idx) = t(i_idx, j_idx) + _dt*(_alpha*discretization.diffusion(_T, i_idx, j_idx) - discretization.convection_T(_T, _U, _V, i_idx, j_idx));
 	}
 	_T = new_T;
-	communication.Communicate(_T);
+	communication.communicate(_T);
 }
 
 double Fields::calculate_maxU(Grid &grid){
