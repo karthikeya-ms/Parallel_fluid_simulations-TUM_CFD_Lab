@@ -10,13 +10,11 @@
 class Communication{
        public: 
          	Communication() = default;
-         	Communication(int iproc, int jproc, Domain &domain, int argn, char **args);
+         	Communication(int iproc, int jproc, Domain &domain);
 		void communicate(Matrix<double> &A);                  //Function to communicate between the field across all parallel neighbouring threads
 		double reduce_min(const Matrix<double> &A);
 		double reduce_sum(const Matrix<double> &A);
 	private:
-		int _argn;
-		char **_args;
 		
 		int x_dim{0};
 		int y_dim{0};
