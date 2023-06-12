@@ -22,6 +22,8 @@ class Cell {
      * @param[in] type of the cell
      */
     Cell(int i, int j, cell_type type);
+    
+    Cell(int i, int j, cell_type type, bool is_ghost);
 
     /**
      * @brief Constructor for Cell object
@@ -71,6 +73,7 @@ class Cell {
      * @param[out] whether the given position is border or not
      */
     bool is_border(border_position position) const;
+    bool is_ghost();
 
     /// Getter of x index
     int i() const;
@@ -90,7 +93,7 @@ class Cell {
     cell_type _type{cell_type::DEFAULT};
     /// Cell id (only necessary for walls)
     int _id{0};
-
+    bool _is_ghost{false};
     /// Vector of bools that holds border conditions. TOP-BOTTOM-LEFT-RIGHT
     std::array<bool, 4> _border{false, false, false, false};
     /// Vector of border positions that holds existing borders
