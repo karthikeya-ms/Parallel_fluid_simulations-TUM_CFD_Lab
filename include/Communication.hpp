@@ -1,23 +1,33 @@
 #pragma once
 
+#include "Datastructures.hpp"
+#include "Domain.hpp"
 #include <memory>
 #include <string>
 #include <vector>
 
 
 class Communication{
-       Public: 
+       public: 
          	Communication() = default;
-         	Communication(int iproc, int jproc, int imax, int jmax, int argn, char **args);
-		static void communicate(const Matrix<double> &A);                  //Function to communicate between the field across all parallel neighbouring threads
-		static double reduce_min(const Matrix<double> &A);
-		static double reduce_sum(const Matrix<double> &A);
-	Private:
+         	Communication(int iproc, int jproc, Domain &domain, int argn, char **args);
+		void communicate(Matrix<double> &A);                  //Function to communicate between the field across all parallel neighbouring threads
+		double reduce_min(const Matrix<double> &A);
+		double reduce_sum(const Matrix<double> &A);
+	private:
 		int _argn;
-		char **_args
+		char **_args;
+		
+		int x_dim{0};
+		int y_dim{0};
 		
 		int _iproc{0};   //Processes in the x direction
                	int _jproc{0};   //Processes in the y direction
                	int _imax{0};    //Max value of x index in the global domain
                	int _jmax{0};    //Max value of y index in the global domain
+               	
+		int _il{0}; //i index of the sub-domain left side cells
+        	int _ir{0}; //i index of the sub-domain right side cells
+        	int _jb{0}; //j index of the sub-domain bottom side cells
+        	int _jt{0}; //j index of the sub-domain top side cells
       };
