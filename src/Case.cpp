@@ -377,8 +377,7 @@ void Case::simulate() {
     double maxu = 0; //local max u velocity
     double maxv = 0; //local max v velocity
     double buffu = 0; //send buffur for u
-    double buffv = 0; //send buffur for v 
-    
+    double buffv = 0; //send buffur for v     
     while (t < _t_end) {  
 	    //calculating the local max velocities
 	    buffu = _field.calculate_maxU(_grid); 
@@ -451,9 +450,11 @@ void Case::simulate() {
 	    
 	    t = t + dt;
     	    timestep = timestep + 1;
-    	    output_vtk(timestep);
+    	    output_vtk(timestep, my_rank);
     }
 }
+
+
 
 void Case::output_vtk(int timestep, int my_rank) {
     // Create a new structured grid
@@ -562,7 +563,7 @@ void Case::output_vtk(int timestep, int my_rank) {
 
     // Create Filename
     std::string outputname =
-        _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
+        _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk"; //Groups of VTK files generated based on rank
 
     writer->SetFileName(outputname.c_str());
     writer->SetInputData(structuredGrid);
