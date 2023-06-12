@@ -101,6 +101,7 @@ double Fields::calculate_maxU(Grid &grid){
 			max_u = abs(_U(i_idx, j_idx));
 		}
 	}
+	max_u = std::abs(*std::max_element(_U.data() + 1, _U.data() + grid.fluid_cells().size() + 1));
 	return max_u;
 }
   
@@ -117,6 +118,7 @@ double Fields::calculate_maxV(Grid &grid){
 			max_v = abs(_V(i_idx, j_idx));
 		}
 	}
+	max_v = std::abs(*std::max_element(_V.data() + 1, _V.data() + grid.fluid_cells().size() + 1));
 	return max_v;
 }
 
