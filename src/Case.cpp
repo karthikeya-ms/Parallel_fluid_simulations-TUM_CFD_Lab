@@ -269,9 +269,11 @@ Case::Case(std::string file_name, int argn, char **args) {
     std::cout << "My domain has size_x = " << domain.size_x << ", and size_y = " << domain.size_y << "." << std::endl;
     
     _grid = Grid(_geom_name, domain);
-        std::cout << "moop" << std::endl;
+    std::cout << "Created grid for thread: " << my_rank << std::endl;
     _field = Fields(GX, GY, nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, UIN, VIN, PI, TI, alpha, beta);
+    std::cout << "Created field for thread: " << my_rank << std::endl;
     Discretization _discretization(domain.dx, domain.dy, gamma);
+    std::cout << "Created discretization for thread: " << my_rank << std::endl;
     _pressure_solver = std::make_unique<SOR>(omg);
     _max_iter = itermax;
     _tolerance = eps;
@@ -291,8 +293,8 @@ Case::Case(std::string file_name, int argn, char **args) {
         _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
     }
     
-    std::cout << "KILL PROGRAM" << std::endl;
-    MPI_Finalize();
+    std::cout << "Finished initialization for thread: " << my_rank << std::endl;
+    MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void Case::set_file_names(std::string file_name) {
