@@ -271,7 +271,7 @@ Case::Case(std::string file_name, int argn, char **args) {
 
     build_domain(domain, imax_local, jmax_local);
     
-    _communication = Communication(_iproc, _jproc, domain, argn, args);
+    _communication = Communication(_iproc, _jproc, domain);
     _grid = Grid(_geom_name, domain, iproc, jproc, imax, jmax);
     _field = Fields(GX, GY, nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, UIN, VIN, PI, TI, alpha, beta);
     Discretization _discretization(domain.dx, domain.dy, gamma);
