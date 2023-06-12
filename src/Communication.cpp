@@ -4,7 +4,7 @@
 #include <iostream>
 #include <numeric>
 
-Communication::Communication(int iproc, int jproc, Domain &domain, int argn, char **args) : _iproc(iproc), _jproc(jproc), _argn(argn), _args(args) {
+Communication::Communication(int iproc, int jproc, Domain &domain) : _iproc(iproc), _jproc(jproc){
 
 	x_dim = domain.domain_size_x;
 	y_dim = domain.domain_size_y;
@@ -17,7 +17,6 @@ Communication::Communication(int iproc, int jproc, Domain &domain, int argn, cha
 	
 void Communication::communicate(Matrix<double> &A) {
 
-	//MPI_Init(&_argn, &_args);
 	int size = _iproc*_jproc;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	int _myrank; //Rank of the current process
@@ -43,10 +42,10 @@ void Communication::communicate(Matrix<double> &A) {
   	else                 {t_rank = _myrank + _iproc;}
   	
   	
-	double *SDatax[x_dim] = {0}; //Send Buffer in the x direction for top and bottom cells
-	double *SDatay[y_dim] = {0}; //Send Buffer in the y direction for left and right cells
-	double *RDatax[x_dim] = {0}; //Recieve Buffer in the x direction for top and bottom cells
-	double *RDatay[y_dim] = {0}; //Recieve Buffer in the y direction for left and right cells
+	double SDatax[x_dim] = {0}; //Send Buffer in the x direction for top and bottom cells
+	double SDatay[y_dim] = {0}; //Send Buffer in the y direction for left and right cells
+	double RDatax[x_dim] = {0}; //Recieve Buffer in the x direction for top and bottom cells
+	double RDatay[y_dim] = {0}; //Recieve Buffer in the y direction for left and right cells
 	
 //############################################# CASES WHERE iproc and jproc ARE NOT EQUAL TO 1 STARTS HERE ###################################################################
 	
@@ -56,19 +55,19 @@ void Communication::communicate(Matrix<double> &A) {
 	if (l_rank == MPI_PROC_NULL && b_rank == MPI_PROC_NULL && t_rank != MPI_PROC_NULL && r_rank != MPI_PROC_NULL){
 		//Send and Recieve from the right
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(x_dim-1, j);
+    			SDatay[j] = A(x_dim-1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, r_rank, 0, RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, r_rank, 0, &RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int j = 1; j < y_dim; ++j){
-    			A(x_dim,j) = *RDatay[j];
+    			A(x_dim,j) = RDatay[j];
   		}
   		//Send and Recieve from the top
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, y_dim-1);
+    			SDatax[i] = A(i, y_dim-1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, t_rank, 1, RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, t_rank, 1, &RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, y_dim) = *RDatax[i];
+    			A(i, y_dim) = RDatax[i];
   		}
   	}
   		
@@ -76,20 +75,20 @@ void Communication::communicate(Matrix<double> &A) {
 	else if (l_rank != MPI_PROC_NULL && b_rank == MPI_PROC_NULL && t_rank != MPI_PROC_NULL && r_rank == MPI_PROC_NULL){
 		//Send and Recieve from the left
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(1, j);
+    			SDatay[j] = A(1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, l_rank, 0, RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, l_rank, 0, &RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		
   		for (int j = 1; j < y_dim; ++j){
-    			A(0, j) = *RDatay[j];
+    			A(0, j) = RDatay[j];
   		}
   		//Send and Recieve from the top
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, y_dim-1);
+    			SDatax[i] = A(i, y_dim-1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, t_rank, 1, RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, t_rank, 1, &RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, y_dim) = *RDatax[i];
+    			A(i, y_dim) = RDatax[i];
   		}
   	}
   	
@@ -97,19 +96,19 @@ void Communication::communicate(Matrix<double> &A) {
 	else if (l_rank == MPI_PROC_NULL && b_rank != MPI_PROC_NULL && t_rank == MPI_PROC_NULL && r_rank != MPI_PROC_NULL){
 		//Send and Recieve from the right
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(x_dim-1, j);
+    			SDatay[j] = A(x_dim-1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, r_rank, 0, RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, r_rank, 0, &RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int j = 1; j < y_dim; ++j){
-    			A(x_dim, j) = *RDatay[j];
+    			A(x_dim, j) = RDatay[j];
   		}
   		//Send and Recieve from the bottom
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, 1);
+    			SDatax[i] = A(i, 1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, b_rank, 1, RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, b_rank, 1, &RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, 0) = *RDatax[i];
+    			A(i, 0) = RDatax[i];
   		}
   	}
   	
@@ -117,20 +116,20 @@ void Communication::communicate(Matrix<double> &A) {
 	else if (l_rank != MPI_PROC_NULL && b_rank != MPI_PROC_NULL && t_rank == MPI_PROC_NULL && r_rank == MPI_PROC_NULL){
 		//Send and Recieve from the left
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(1, j);
+    			SDatay[j] = A(1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, l_rank, 0, RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, l_rank, 0, &RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		
   		for (int j = 1; j < y_dim; ++j){
-    			A(0, j) = *RDatay[j];
+    			A(0, j) = RDatay[j];
   		}
   		//Send and Recieve from the bottom
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, 1);
+    			SDatax[i] = A(i, 1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, b_rank, 1, RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, b_rank, 1, &RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, 0) = *RDatax[i];
+    			A(i, 0) = RDatax[i];
   		}
   	}
   	
@@ -142,27 +141,27 @@ void Communication::communicate(Matrix<double> &A) {
 	else if (l_rank == MPI_PROC_NULL && b_rank != MPI_PROC_NULL && t_rank != MPI_PROC_NULL && r_rank != MPI_PROC_NULL){
 		//Send and Recieve from the right
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(x_dim-1, j);
+    			SDatay[j] = A(x_dim-1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, r_rank, 0, RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, r_rank, 0, &RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int j = 1; j < y_dim; ++j){
-    			A(x_dim, j) = *RDatay[j];
+    			A(x_dim, j) = RDatay[j];
   		}
   		//Send and Recieve from the top
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, y_dim-1);
+    			SDatax[i] = A(i, y_dim-1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, t_rank, 1, RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, t_rank, 1, &RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, y_dim) = *RDatax[i];
+    			A(i, y_dim) = RDatax[i];
   		}
   		//Send and Recieve from the bottom
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, 1);
+    			SDatax[i] = A(i, 1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, b_rank, 1, RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, b_rank, 1, &RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, 0) = *RDatax[i];
+    			A(i, 0) = RDatax[i];
   		}
   	}
   	
@@ -170,28 +169,28 @@ void Communication::communicate(Matrix<double> &A) {
 	else if (l_rank != MPI_PROC_NULL && b_rank != MPI_PROC_NULL && t_rank == MPI_PROC_NULL && r_rank != MPI_PROC_NULL){
 		//Send and Recieve from the right
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(x_dim-1, j);
+    			SDatay[j] = A(x_dim-1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, r_rank, 0, RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, r_rank, 0, &RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int j = 1; j < y_dim; ++j){
-    			A(x_dim, j) = *RDatay[j];
+    			A(x_dim, j) = RDatay[j];
   		}
   		//Send and Recieve from the left
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(1, j);
+    			SDatay[j] = A(1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, l_rank, 0, RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, l_rank, 0, &RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		
   		for (int j = 1; j < y_dim; ++j){
-    			A(0, j) = *RDatay[j];
+    			A(0, j) = RDatay[j];
   		}
   		//Send and Recieve from the bottom
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, 1);
+    			SDatax[i] = A(i, 1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, b_rank, 1, RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, b_rank, 1, &RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, 0) = *RDatax[i];
+    			A(i, 0) = RDatax[i];
   		}
   	}
   	
@@ -199,28 +198,28 @@ void Communication::communicate(Matrix<double> &A) {
 	else if (l_rank != MPI_PROC_NULL && b_rank != MPI_PROC_NULL && t_rank != MPI_PROC_NULL && r_rank == MPI_PROC_NULL){
 		//Send and Recieve from the left
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(1, j);
+    			SDatay[j] = A(1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, l_rank, 0, RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, l_rank, 0, &RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		
   		for (int j = 1; j < y_dim; ++j){
-    			A(0, j) = *RDatay[j];
+    			A(0, j) = RDatay[j];
   		}
   		//Send and Recieve from the top
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, y_dim-1);
+    			SDatax[i] = A(i, y_dim-1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, t_rank, 1, RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, t_rank, 1, &RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, y_dim) = *RDatax[i];
+    			A(i, y_dim) = RDatax[i];
   		}
   		//Send and Recieve from the bottom
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, 1);
+    			SDatax[i] = A(i, 1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, b_rank, 1, RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, b_rank, 1, &RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, 0) = *RDatax[i];
+    			A(i, 0) = RDatax[i];
   		}
   	}
   	
@@ -228,28 +227,28 @@ void Communication::communicate(Matrix<double> &A) {
 	else if (l_rank != MPI_PROC_NULL && b_rank == MPI_PROC_NULL && t_rank != MPI_PROC_NULL && r_rank != MPI_PROC_NULL){
 		//Send and Recieve from the left
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(1, j);
+    			SDatay[j] = A(1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, l_rank, 0, RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, l_rank, 0, &RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		
   		for (int j = 1; j < y_dim; ++j){
-    			A(0, j) = *RDatay[j];
+    			A(0, j) = RDatay[j];
   		}
   		//Send and Recieve from the top
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, y_dim-1);
+    			SDatax[i] = A(i, y_dim-1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, t_rank, 1, RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, t_rank, 1, &RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, y_dim) = *RDatax[i];
+    			A(i, y_dim) = RDatax[i];
   		}
   		//Send and Recieve from the right
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(x_dim-1, j);
+    			SDatay[j] = A(x_dim-1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, r_rank, 0, RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, r_rank, 0, &RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int j = 1; j < y_dim; ++j){
-    			A(x_dim, j) = *RDatay[j];
+    			A(x_dim, j) = RDatay[j];
   		}
   	}
   	
@@ -261,36 +260,36 @@ void Communication::communicate(Matrix<double> &A) {
 	else if (l_rank != MPI_PROC_NULL && b_rank != MPI_PROC_NULL && t_rank != MPI_PROC_NULL && r_rank != MPI_PROC_NULL){
 		//Send and Recieve from the left
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(1, j);
+    			SDatay[j] = A(1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, l_rank, 0, RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, l_rank, 0, &RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		
   		for (int j = 1; j < y_dim; ++j){
-    			A(0, j) = *RDatay[j];
+    			A(0, j) = RDatay[j];
   		}
   		//Send and Recieve from the top
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, y_dim-1);
+    			SDatax[i] = A(i, y_dim-1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, t_rank, 1, RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, t_rank, 1, &RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, y_dim) = *RDatax[i];
+    			A(i, y_dim) = RDatax[i];
   		}
   		//Send and Recieve from the right
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(x_dim-1, j);
+    			SDatay[j] = A(x_dim-1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, r_rank, 0, RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, r_rank, 0, &RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int j = 1; j < y_dim; ++j){
-    			A(x_dim, j) = *RDatay[j];
+    			A(x_dim, j) = RDatay[j];
   		}
   		//Send and Recieve from the bottom
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, 1);
+    			SDatax[i] = A(i, 1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, b_rank, 1, RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, b_rank, 1, &RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, 0) = *RDatax[i];
+    			A(i, 0) = RDatax[i];
   		}
   	}
   	
@@ -303,41 +302,41 @@ void Communication::communicate(Matrix<double> &A) {
 	else if (l_rank == MPI_PROC_NULL && b_rank == MPI_PROC_NULL && t_rank != MPI_PROC_NULL && r_rank == MPI_PROC_NULL){
   		//Send and Recieve from the top
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, y_dim-1);
+    			SDatax[i] = A(i, y_dim-1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, t_rank, 1, RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, t_rank, 1, &RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, y_dim) = *RDatax[i];
+    			A(i, y_dim) = RDatax[i];
   		}
   	}
   	
   	else if (l_rank == MPI_PROC_NULL && b_rank != MPI_PROC_NULL && t_rank != MPI_PROC_NULL && r_rank == MPI_PROC_NULL){
   		//Send and Recieve from the top
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, y_dim-1);
+    			SDatax[i] = A(i, y_dim-1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, t_rank, 1, RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, t_rank, 1, &RDatax, x_dim, MPI_DOUBLE, t_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, y_dim) = *RDatax[i];
+    			A(i, y_dim) = RDatax[i];
   		}
   		//Send and Recieve from the bottom
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, 1);
+    			SDatax[i] = A(i, 1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, b_rank, 1, RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, b_rank, 1, &RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, 0) = *RDatax[i];
+    			A(i, 0) = RDatax[i];
   		}
   	}
   	
   	else if (l_rank == MPI_PROC_NULL && b_rank != MPI_PROC_NULL && t_rank == MPI_PROC_NULL && r_rank == MPI_PROC_NULL){
   		//Send and Recieve from the bottom
 		for (int i = 1; i < x_dim; ++i){
-    			*SDatax[i] = A(i, 1);
+    			SDatax[i] = A(i, 1);
   		}
-  		MPI_Sendrecv(SDatax, x_dim, MPI_DOUBLE, b_rank, 1, RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatax, x_dim, MPI_DOUBLE, b_rank, 1, &RDatax, x_dim, MPI_DOUBLE, b_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int i = 1; i < x_dim; ++i){
-    			A(i, 0) = *RDatax[i];
+    			A(i, 0) = RDatax[i];
   		}
   	}
 //############################################# CASES WHERE iproc IS EQUAL TO 1 END HERE #################################################################################### 
@@ -346,68 +345,65 @@ void Communication::communicate(Matrix<double> &A) {
 	else if (l_rank == MPI_PROC_NULL && b_rank == MPI_PROC_NULL && t_rank == MPI_PROC_NULL && r_rank != MPI_PROC_NULL){
   		//Send and Recieve from the right
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(x_dim-1, j);
+    			SDatay[j] = A(x_dim-1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, r_rank, 0, RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, r_rank, 0, &RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int j = 1; j < y_dim; ++j){
-    			A(x_dim, j) = *RDatay[j];
+    			A(x_dim, j) = RDatay[j];
   		}
   	}
   	
   	else if (l_rank != MPI_PROC_NULL && b_rank == MPI_PROC_NULL && t_rank == MPI_PROC_NULL && r_rank != MPI_PROC_NULL){
 		//Send and Recieve from the left
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(1, j);
+    			SDatay[j] = A(1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, l_rank, 0, RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, l_rank, 0, &RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int j = 1; j < y_dim; ++j){
-    			A(0, j) = *RDatay[j];
+    			A(0, j) = RDatay[j];
   		}
   		//Send and Recieve from the right
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(x_dim-1, j);
+    			SDatay[j] = A(x_dim-1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, r_rank, 0, RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, r_rank, 0, &RDatay, y_dim, MPI_DOUBLE, r_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		for (int j = 1; j < y_dim; ++j){
-    			A(x_dim, j) = *RDatay[j];
+    			A(x_dim, j) = RDatay[j];
   		}
   	}
   	
   	else if (l_rank != MPI_PROC_NULL && b_rank == MPI_PROC_NULL && t_rank == MPI_PROC_NULL && r_rank == MPI_PROC_NULL){
 		//Send and Recieve from the left
 		for (int j = 1; j < y_dim; ++j){
-    			*SDatay[j] = A(1, j);
+    			SDatay[j] = A(1, j);
   		}
-  		MPI_Sendrecv(SDatay, y_dim, MPI_DOUBLE, l_rank, 0, RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  		MPI_Sendrecv(&SDatay, y_dim, MPI_DOUBLE, l_rank, 0, &RDatay, y_dim, MPI_DOUBLE, l_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   		
   		for (int j = 1; j < y_dim; ++j){
-    			A(0, j) = *RDatay[j];
+    			A(0, j) = RDatay[j];
   		}
   	}
 //############################################# CASES WHERE jproc IS EQUAL TO 1 END HERE ######################################################################################
-//############################################# CASES WHERE iproc and jproc ARE EQUAL TO 1 END HERE ###########################################################################		
-  MPI_Finalize();				
+//############################################# CASES WHERE iproc and jproc ARE EQUAL TO 1 END HERE ###########################################################################						
 }  						
   	
 double Communication::reduce_min(const Matrix<double> &A){
 	
-	//MPI_Init(&_argn, &_args);
-	std::vector<double> vec{0};
+	std::vector<double> vec;
 	for(int i = 1; i < x_dim; ++i){
 		for(int j = 1; j < y_dim; ++j){
 			vec.push_back(A(i,j));
 		}
 	}
-	double localMin = *std::min_element(vec.begin(),vec.end());
+	double localMin; 
+	localMin = *std::min_element(vec.begin(),vec.end());
 	double globalMin;
 	MPI_Allreduce(&localMin, &globalMin, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-	MPI_Finalize();
 	return globalMin;
 }
 
 double Communication::reduce_sum(const Matrix<double> &A){
 	
-	//MPI_Init(&_argn, &_args);
 	double localSum = 0;
 	std::vector<double> vec{0};
 	for(int i = 1; i < x_dim; ++i){
@@ -418,7 +414,6 @@ double Communication::reduce_sum(const Matrix<double> &A){
 	localSum = std::accumulate(vec.begin(), vec.end(), 0);
 	double globalSum;
 	MPI_Allreduce(&localSum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	MPI_Finalize();
 	return globalSum;
 }
 
