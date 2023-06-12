@@ -4,6 +4,8 @@
 
 Cell::Cell(int i, int j, cell_type type) : _i(i), _j(j), _type(type) {}
 
+Cell::Cell(int i, int j, cell_type type, bool is_ghost) : _i(i), _j(j), _type(type), _is_ghost(is_ghost) {}
+
 Cell::Cell(int i, int j, cell_type type, int id) : _i(i), _j(j), _type(type), _id(id) {}
 
 // borders Get and Set
@@ -27,3 +29,5 @@ int Cell::j() const { return _j; }
 cell_type Cell::type() const { return _type; }
 
 int Cell::wall_id() const { return _id; }
+
+bool Cell::is_ghost() {return _is_ghost;}
