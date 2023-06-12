@@ -5,7 +5,7 @@
 
 SOR::SOR(double omega) : _omega(omega) {}
 
-double SOR::solve(Fields &field, Grid &grid, const std::vector<std::unique_ptr<Boundary>> &boundaries) {
+double SOR::solve(Fields &field, Grid &grid, const std::vector<std::unique_ptr<Boundary>> &boundaries, Communication &communication) {
 
     double dx = grid.dx();
     double dy = grid.dy();
@@ -19,6 +19,8 @@ double SOR::solve(Fields &field, Grid &grid, const std::vector<std::unique_ptr<B
         field.p(i, j) = (1.0 - _omega) * field.p(i, j) +
                         coeff * (Discretization::sor_helper(field.p_matrix(), i, j) - field.rs(i, j));
     }
+    Matrix<double> _p = field.p_matrix();
+    communication.communicate(_p); //Communicate and exchange the pressure values at the ghost layers
 
     double res = 0.0;
     double rloc = 0.0;
@@ -37,3 +39,5 @@ double SOR::solve(Fields &field, Grid &grid, const std::vector<std::unique_ptr<B
 
     return res;
 }
+
+
