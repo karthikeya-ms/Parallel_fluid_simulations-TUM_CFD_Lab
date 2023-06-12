@@ -63,8 +63,8 @@ Case::Case(std::string file_name, int argn, char **args) {
     std::string geo_file{"NONE"};     /* String with the name of the geometry file loaded */
     int iproc{1};    /* number of processors used to parallelize simulation in x-axis */
     int jproc{1};    /* number of processors used to parallelize simulation in x-axis */
-    int _argn = argn;
-    char **_args = args;
+    _argn = argn;
+    _args = args;
     
 
     if (file.is_open()) {
@@ -102,8 +102,8 @@ Case::Case(std::string file_name, int argn, char **args) {
 	        if (var == "num_walls") file >> num_walls;
 	        if ((num_walls != 0) and (num_walls != 6)){
 	        	 
-			for (int i = 3; i < 3 + num_walls; i++){
-				if (var == "wall_temp_" + std::to_string(i)) file >> temps[i - 3];
+		for (int i = 3; i < 3 + num_walls; i++){
+			if (var == "wall_temp_" + std::to_string(i)) file >> temps[i - 3];
 			}
 	        }
 	        if (var == "geo_file") file >> geo_file;
@@ -114,8 +114,8 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     file.close();
     
-    _iproc = iproc;
-    _jproc = jproc;
+   _iproc = iproc;
+   _jproc = jproc;
     
     if ((_iproc == 1) and (_jproc == 1)){
     	std::string question;
@@ -206,25 +206,26 @@ Case::Case(std::string file_name, int argn, char **args) {
     int jmin_local;
     int jmax_local;
     
-    int my_x = my_rank%_iproc;
-    int my_y = (my_rank - my_x)/_iproc;
+    int my_x = (my_rank)%_iproc + 1;
+    int my_y = ((my_rank + 1) - my_x)/_iproc + 1;
     
+
     if ((imax % _iproc) == 0){ //All processors take same number of tiles (x-axis).
-	imin_local = my_x*(imax/_iproc) + 1;
-	imax_local = (my_x + 1)*(imax/_iproc);
+	imin_local = (my_x - 1)*(imax/_iproc) + 1;
+	imax_local = (my_x)*(imax/_iproc);
 	
 	if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
-		jmin_local = my_y*(jmax/_jproc) + 1;
-		jmax_local = (my_y + 1)*(jmax/_jproc);
+		jmin_local = (my_y - 1)*(jmax/_jproc) + 1;
+		jmax_local = (my_y)*(jmax/_jproc);
 	}
 	else{ //Not all processors take same number of tiles (y-axis).
-	    	if (my_y < (jmax % _jproc)){ //Processors with an extra tile (y-axis).
-	    		jmin_local = my_y*(jmax/_jproc) + (my_y + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (my_y + 1);
+	    	if (my_y <= (jmax % _jproc)){ //Processors with an extra tile (y-axis).
+	    		jmin_local = (my_y - 1)*(jmax/_jproc) + (my_y);
+			jmax_local = (my_y)*(jmax/_jproc) + (my_y);
 	 	}
 	 	else{ //Processors with no extra tile (y-axis).
-	 		jmin_local = my_y*(jmax/_jproc) + (jmax % _jproc + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (jmax % _jproc);
+	 		jmin_local = (my_y - 1)*(jmax/_jproc) + (jmax % _jproc + 1);
+			jmax_local = (my_y)*(jmax/_jproc) + (jmax % _jproc);
 	 	}
 	}
 	
@@ -232,50 +233,53 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     
     else{ //Not all processors take same number of tiles (x-axis).
-    	if (my_x < (imax % _iproc)){ //Processors with an extra tile (x-axis).
-    		imin_local = my_x*(imax/_iproc) + (my_x + 1);
-		imax_local = (my_x + 1)*(imax/_iproc) + (my_x + 1);
+    	if (my_x <= (imax % _iproc)){ //Processors with an extra tile (x-axis).
+    		imin_local = (my_x - 1)*(imax/_iproc) + (my_x);
+		imax_local = (my_x)*(imax/_iproc) + (my_x);
  	}
  	else{ //Processors with no extra tile (x-axis).
- 		imin_local = my_x*(imax/_iproc) + (imax % _iproc + 1);
-		imax_local = (my_x + 1)*(imax/_iproc) + (imax % _iproc);
+ 		imin_local = (my_x - 1)*(imax/_iproc) + (imax % _iproc + 1);
+		imax_local = (my_x)*(imax/_iproc) + (imax % _iproc);
  	}
  	if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
-		jmin_local = my_y*(jmax/_jproc) + 1;
-		jmax_local = (my_y + 1)*(jmax/_jproc);
+		jmin_local = (my_y - 1)*(jmax/_jproc) + 1;
+		jmax_local = (my_y)*(jmax/_jproc);
 	}
 	else{ //Not all processors take same number of tiles (y-axis).
-	    	if (my_y < (jmax % _jproc)){ //Processors with an extra tile (y-axis).
-	    		jmin_local = my_y*(jmax/_jproc) + (my_y + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (my_y + 1);
+	    	if (my_y <= (jmax % _jproc)){ //Processors with an extra tile (y-axis).
+	    		jmin_local = (my_y - 1)*(jmax/_jproc) + (my_y);
+			jmax_local = (my_y)*(jmax/_jproc) + (my_y);
 	 	}
 	 	else{ //Processors with no extra tile (y-axis).
-	 		jmin_local = my_y*(jmax/_jproc) + (jmax % _jproc + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (jmax % _jproc);
+	 		jmin_local = (my_y - 1)*(jmax/_jproc) + (jmax % _jproc + 1);
+			jmax_local = (my_y)*(jmax/_jproc) + (jmax % _jproc);
 	 	}
 	}
     }
+
     
     std::cout << "I am thread with id: " << my_rank << ". My x and y coordinates are: (" << my_x << ", " << my_y << "). I got assigned tiles from x-position: [" << imin_local << ", " << imax_local << "], and y-position: [" << jmin_local << ", " << jmax_local << "]." << std::endl;
-    
-    MPI_Finalize();
     
     // Build up the domain
     Domain domain;
     domain.dx = xlength / static_cast<double>(imax);
     domain.dy = ylength / static_cast<double>(jmax);
-    domain.domain_size_x = imax;
-    domain.domain_size_y = jmax;
+    domain.domain_size_x = imax_local - imin_local + 1;
+    domain.domain_size_y = jmax_local - jmin_local + 1;
 
-    build_domain(domain, imax, jmax);
+    build_domain(domain, imax_local, imin_local, jmax_local, jmin_local);
     
+    std::cout << "My domain has size_x = " << domain.size_x << ", and size_y = " << domain.size_y << "." << std::endl;
+    
+    _communication = Communication(_iproc, _jproc, domain, argn, args);
     _grid = Grid(_geom_name, domain);
+        std::cout << "moop" << std::endl;
     _field = Fields(GX, GY, nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, UIN, VIN, PI, TI, alpha, beta);
     Discretization _discretization(domain.dx, domain.dy, gamma);
-    _communication = Communication(_irpoc, _jproc, imax, jmax, argn, args);
     _pressure_solver = std::make_unique<SOR>(omg);
     _max_iter = itermax;
-    _tolerance = eps;	
+    _tolerance = eps;
+
 	
     // Construct boundaries
     if (not _grid.moving_wall_cells().empty()) {
@@ -293,6 +297,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     
     std::cout << "KILL PROGRAM" << std::endl;
+    MPI_Finalize();
 }
 
 void Case::set_file_names(std::string file_name) {
@@ -376,14 +381,14 @@ void Case::simulate() {
     double output_counter = 0.0;
     double maxu = 0; //local max u velocity
     double maxv = 0; //local max v velocity
-    double buffu = 0; //send buffur for u
-    double buffv = 0; //send buffur for v 
+    double *buffu = 0; //send buffur for u
+    double *buffv = 0; //send buffur for v 
     
     while (t < _t_end) {
 	    
 	    //calculating the local max velocities
-	    buffu = _field.calculate_maxU(_grid); 
-	    buffv = _field.calculate_maxV(_grid);
+	    *buffu = _field.calculate_maxU(_grid); 
+	    *buffv = _field.calculate_maxV(_grid);
 	    //If I am not the master, sending it to master
 	    if(my_rank != master){	
 	    	MPI_Send(buffu, 1, MPI_DOUBLE, 0, 123, MPI_COMM_WORLD);
@@ -394,14 +399,14 @@ void Case::simulate() {
 	    	std::vector<double>Globu{0}; //temporary variable for storing the local max u velocities of all processes 
     		std::vector<double>Globv{0}; //temporary variable for storing the local max v velocities of all processes
     		//inserting the local max velocities of the master
-    		Globu.push_back(buffu);      
-	    	Glubv.push_back(buffv);
+    		Globu.push_back(*buffu);      
+	    	Globv.push_back(*buffv);
 	    	//recieving the local max velocities from all the other processes 
 	    	MPI_Recv(buffu, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 123, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    	MPI_Recv(buffv, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 123, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    	//instering the local max velocities of all the other processes
-	    	Globu.push_back(buffu);
-	    	Glubv.push_back(buffv);
+	    	Globu.push_back(*buffu);
+	    	Globv.push_back(*buffv);
 	    	
 	    	//finding the global max velocities across all processes
 	    	for(auto i : Globu){
@@ -421,7 +426,7 @@ void Case::simulate() {
 	    	_field.calculate_temperatures(_grid, _discretization, _communication);
 	    }
 	    
-	    _field.calculate_fluxes(_grid, _discretization, _energy_eq);
+	    _field.calculate_fluxes(_grid, _discretization, _energy_eq, _communication);
 	    for (auto const& boundary : _boundaries){
 	    	boundary->apply(_field, _energy_eq);
 	    }
@@ -431,7 +436,7 @@ void Case::simulate() {
 	    int iter{0};
 	    double res = _pressure_solver->solve(_field, _grid, _boundaries, _communication); 
 	    while ((res > _tolerance) and (iter < _max_iter)) {
-	    	res = _pressure_solver->solve(_field, _grid, _boundaries);
+	    	res = _pressure_solver->solve(_field, _grid, _boundaries, _communication);
 	    	for (auto const& boundary : _boundaries){
 	    		boundary->apply(_field, _energy_eq);
 	    	}
@@ -570,13 +575,14 @@ void Case::output_vtk(int timestep, int my_rank) {
     writer->Write();
 }
 
-void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
+void Case::build_domain(Domain &domain, int imax_local, int imin_local, int jmax_local, int jmin_local) {
     	
-    domain.imin = 0;
-    domain.jmin = 0;
-    domain.imax = imax_domain + 2;
-    domain.jmax = jmax_domain + 2;
-    domain.size_x = imax_domain;
-    domain.size_y = jmax_domain;
+    domain.imin = imin_local - 1;
+    domain.jmin = jmin_local - 1;
+    domain.imax = imax_local + 1;
+    domain.jmax = jmax_local + 1;
+    domain.size_x = imax_local - imin_local + 1;
+    domain.size_y = jmax_local - jmin_local + 1;
 }
+
 
