@@ -27,7 +27,7 @@ class Case {
      * @param[in] Input file name
      */
     //Case(std::string file_name, int argn, char **args);
-    Case(std::string file_name);
+    Case(std::string file_name, int argn, char **args);
 
     /**
      * @brief Main function to simulate the flow until the end time.
@@ -51,12 +51,18 @@ class Case {
     std::string _prefix;
     
     bool _energy_eq{false};
+    
+    int _iproc;
+    int _jproc;
+    int _argn;
+    char **_args;
 
     /// Simulation time
     double _t_end;
     /// Solution file outputting frequency
     double _output_freq;
 
+    Communication _communication;
     Fields _field;
     Grid _grid;
     Discretization _discretization;
@@ -68,8 +74,6 @@ class Case {
 
     /// Maximum number of iterations for the solver
     int _max_iter;
-    int _argn;
-    char **_args;
 
     /**
      * @brief Creating file names from given input data file
@@ -92,5 +96,5 @@ class Case {
      */
     void output_vtk(int t, int my_rank = 0);
 
-    void build_domain(Domain &domain, int imax_domain, int jmax_domain);
+    void build_domain(Domain &domain, int imax_local, int imin_local, int jmax_local, int jmin_local);
 };
