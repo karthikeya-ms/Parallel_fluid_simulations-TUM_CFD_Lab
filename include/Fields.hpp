@@ -3,6 +3,7 @@
 #include "Datastructures.hpp"
 #include "Discretization.hpp"
 #include "Grid.hpp"
+#include "Communication.hpp"
 
 /**
  * @brief Class of container and modifier for the physical fields
@@ -36,7 +37,7 @@ class Fields {
      * @param[in] energy parameter to determine if the temperature is being calculated
      *
      */
-    void calculate_fluxes(Grid &grid, Discretization &discretization, bool energy_eq);
+    void calculate_fluxes(Grid &grid, Discretization &discretization, bool energy_eq, Communication &communication);
 
     /**
      * @brief Right hand side calculations using the fluxes for the pressure
@@ -53,7 +54,7 @@ class Fields {
      * @param[in] grid in which the calculations are done
      *
      */
-    void calculate_velocities(Grid &grid);
+    void calculate_velocities(Grid &grid, Communication &communication);
     
     /**
      * @brief Temperature calculation using previous time step temperature values
@@ -62,7 +63,7 @@ class Fields {
      * @param[in] discretization used to help calculate difussion and convection terms
      *
      */
-    void calculate_temperatures(Grid &grid, Discretization &discretization);
+    void calculate_temperatures(Grid &grid, Discretization &discretization, Communication &communication);
 
     /**
      * @brief Adaptive step size calculation using x-velocity condition,
@@ -71,7 +72,9 @@ class Fields {
      * @param[in] grid in which the calculations are done
      *
      */
-    double calculate_dt(Grid &grid, bool energy_eq);
+    double calculate_maxU(Grid &grid);
+    double calculate_maxV(Grid &grid);
+    double calculate_dt(Grid &grid, bool energy_eq, double &maxu, double &maxv);
 
     /// x-velocity index based access and modify
     double &u(int i, int j);
