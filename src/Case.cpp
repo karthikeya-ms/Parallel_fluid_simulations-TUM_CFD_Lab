@@ -257,6 +257,8 @@ Case::Case(std::string file_name, int argn, char **args) {
     
     imax_local = imax_local - imin_local + 1;
     jmax_local = jmax_local - jmin_local + 1;
+    imin_local = imin_local - imin_local + 1;
+    jmin_local = jmin_local - jmin_local + 1;
     
     std::cout << "I am thread with id: " << my_rank << ". My x and y coordinates are: (" << my_x << ", " << my_y << "). I got assigned tiles from x-position: [" << imin_local << ", " << imax_local << "], and y-position: [" << jmin_local << ", " << jmax_local << "]." << std::endl;
     
@@ -271,7 +273,8 @@ Case::Case(std::string file_name, int argn, char **args) {
     
     std::cout << "My domain has size_x = " << domain.size_x << ", and size_y = " << domain.size_y << "." << std::endl;
     
-    _grid = Grid(_geom_name, domain);
+    _communication = Communication(_iproc, _jproc, domain, argn, args);
+    _grid = Grid(_geom_name, domain, iproc, jproc, imax, jmax);
     std::cout << "Created grid for thread: " << my_rank << std::endl;
     _field = Fields(GX, GY, nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, UIN, VIN, PI, TI, alpha, beta);
     std::cout << "Created field for thread: " << my_rank << std::endl;
@@ -368,21 +371,66 @@ void Case::set_file_names(std::string file_name) {
  * For information about the classes and functions, you can check the header files.
  */
 void Case::simulate() {
+    
+    int size, my_rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    int master{0}; //rank of the master
 
     double t = 0.0;
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
-    
+    double maxu = 0; //local max u velocity
+    double maxv = 0; //local max v velocity
+    double *buffu = 0; //send buffur for u
+    double *buffv = 0; //send buffur for v 
+    std::cout<<" I am before the while loop in simulate();"<<std::endl;
     while (t < _t_end) {
 	    
-	    dt = _field.calculate_dt(_grid, _energy_eq);
-	    
-	    if (_energy_eq == true){
-	    	_field.calculate_temperatures(_grid, _discretization);
+	    //calculating the local max velocities
+	    *buffu = _field.calculate_maxU(_grid); 
+	    *buffv = _field.calculate_maxV(_grid);
+	    //If I am not the master, sending it to master
+	    if(my_rank != master){	
+	    	MPI_Send(buffu, 1, MPI_DOUBLE, 0, 123, MPI_COMM_WORLD);
+	    	MPI_Send(buffv, 1, MPI_DOUBLE, 0, 123, MPI_COMM_WORLD);
+	    	}
+	    //If I am the master, computing the global maximum velocities
+	    else{
+	    	std::vector<double>Globu; //temporary variable for storing the local max u velocities of all processes 
+    		std::vector<double>Globv; //temporary variable for storing the local max v velocities of all processes
+    		//inserting the local max velocities of the master
+    		Globu.push_back(*buffu);      
+	    	Globv.push_back(*buffv);
+	    	//recieving the local max velocities from all the other processes 
+	    	MPI_Recv(buffu, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 123, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    	MPI_Recv(buffv, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 123, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    	//instering the local max velocities of all the other processes
+	    	Globu.push_back(*buffu);
+	    	Globv.push_back(*buffv);
+	    	MPI_Barrier(MPI_COMM_WORLD);
+	    	
+	    	//finding the global max velocities across all processes
+	    	for(auto i : Globu){
+	    		if(i > maxu){ maxu = i;}
+	    	}
+	    	for(auto i: Globv){
+	    		if(i > maxv){ maxv = i;}
+	    	}	
+	    //Broadcasting the global max velocities to all other processes from the master
+	    MPI_Bcast(&maxu, 1, MPI_DOUBLE, master, MPI_COMM_WORLD);
+	    MPI_Bcast(&maxv, 1, MPI_DOUBLE, master, MPI_COMM_WORLD);
 	    }
 	    
-	    _field.calculate_fluxes(_grid, _discretization, _energy_eq);
+	    dt = _field.calculate_dt(_grid, _energy_eq, maxu, maxv);
+	    std::cout<<"I have calculated dt = "<<dt<<std::endl;
+	    
+	    if (_energy_eq == true){
+	    	_field.calculate_temperatures(_grid, _discretization, _communication);
+	    }
+	    
+	    _field.calculate_fluxes(_grid, _discretization, _energy_eq, _communication);
 	    for (auto const& boundary : _boundaries){
 	    	boundary->apply(_field, _energy_eq);
 	    }
@@ -390,9 +438,9 @@ void Case::simulate() {
 	    _field.calculate_rs(_grid);
 	    
 	    int iter{0};
-	    double res = _pressure_solver->solve(_field, _grid, _boundaries); 
+	    double res = _pressure_solver->solve(_field, _grid, _boundaries, _communication); 
 	    while ((res > _tolerance) and (iter < _max_iter)) {
-	    	res = _pressure_solver->solve(_field, _grid, _boundaries);
+	    	res = _pressure_solver->solve(_field, _grid, _boundaries, _communication);
 	    	for (auto const& boundary : _boundaries){
 	    		boundary->apply(_field, _energy_eq);
 	    	}
@@ -406,15 +454,14 @@ void Case::simulate() {
 		}
 	    }
 	    
-	    _field.calculate_velocities(_grid);
+	    _field.calculate_velocities(_grid, _communication);
 	    
 	    t = t + dt;
     	    timestep = timestep + 1;
     	    output_vtk(timestep);
     }
+MPI_Finalize();
 }
-
-
 
 void Case::output_vtk(int timestep, int my_rank) {
     // Create a new structured grid
