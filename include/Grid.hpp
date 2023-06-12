@@ -26,7 +26,7 @@ class Grid {
      * @param[in] domain struct storing geometry information
      *
      */
-    Grid(std::string geom_name, Domain &domain);
+    Grid(std::string geom_name, Domain &domain, int iproc, int jproc, int imax, int jmax);
 
     /// index based cell access
     Cell cell(int i, int j) const;
