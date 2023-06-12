@@ -255,6 +255,9 @@ Case::Case(std::string file_name, int argn, char **args) {
 	}
     }
     
+    imax_local = imax_local - imin_local + 1;
+    jmax_local = jmax_local - jmin_local + 1;
+    
     std::cout << "I am thread with id: " << my_rank << ". My x and y coordinates are: (" << my_x << ", " << my_y << "). I got assigned tiles from x-position: [" << imin_local << ", " << imax_local << "], and y-position: [" << jmin_local << ", " << jmax_local << "]." << std::endl;
     
     // Build up the domain
@@ -264,7 +267,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     domain.domain_size_x = imax_local - imin_local + 1;
     domain.domain_size_y = jmax_local - jmin_local + 1;
 
-    build_domain(domain, imax_local, imin_local, jmax_local, jmin_local);
+    build_domain(domain, imax_local, jmax_local);
     
     std::cout << "My domain has size_x = " << domain.size_x << ", and size_y = " << domain.size_y << "." << std::endl;
     
@@ -527,12 +530,12 @@ void Case::output_vtk(int timestep, int my_rank) {
     writer->Write();
 }
 
-void Case::build_domain(Domain &domain, int imax_local, int imin_local, int jmax_local, int jmin_local) {
+void Case::build_domain(Domain &domain, int imax_local, int jmax_local) {
     	
-    domain.imin = imin_local - 1;
-    domain.jmin = jmin_local - 1;
-    domain.imax = imax_local + 1;
-    domain.jmax = jmax_local + 1;
-    domain.size_x = imax_local - imin_local + 1;
-    domain.size_y = jmax_local - jmin_local + 1;
+    domain.imin = 0;
+    domain.jmin = 0;
+    domain.imax = imax_local + 2;
+    domain.jmax = jmax_local + 2;
+    domain.size_x = imax_local;
+    domain.size_y = jmax_local;
 }

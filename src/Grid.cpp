@@ -6,7 +6,6 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include <mpi.h>
 
 Grid::Grid(std::string geom_name, Domain &domain) {
 
@@ -22,8 +21,8 @@ Grid::Grid(std::string geom_name, Domain &domain) {
                                                     std::vector<int>(_domain.domain_size_y + 2, 0));
         if (my_rank == 0){
         	parse_geometry_file(geom_name, geometry_data);
-        	assign_cell_types(geometry_data);
         }
+        assign_cell_types(geometry_data);
     } else {
         build_lid_driven_cavity();
     }
@@ -51,11 +50,11 @@ void Grid::build_lid_driven_cavity() {
 
 void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
 
-    int i = _domain.imin - 1;
-    int j = _domain.jmin - 1;
+    int i = 0;
+    int j = 0;
 
     for (int j_geom = _domain.jmin; j_geom < _domain.jmax; ++j_geom) {
-        { i = _domain.imin - 1; }
+        { i = 0; }
         for (int i_geom = _domain.imin; i_geom < _domain.imax; ++i_geom) {
             if (geometry_data.at(i_geom).at(j_geom) == 0) {
                 _cells(i, j) = Cell(i, j, cell_type::FLUID);
@@ -87,8 +86,8 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
 
     // Corner cell neighbour assigment
     // Bottom-Left Corner
-    i = _domain.imin - 1;
-    j = _domain.jmin - 1;
+    i = 0;
+    j = 0;
     _cells(i, j).set_neighbour(&_cells(i, j + 1), border_position::TOP);
     _cells(i, j).set_neighbour(&_cells(i + 1, j), border_position::RIGHT);
     if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {
@@ -98,7 +97,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         _cells(i, j).add_border(border_position::RIGHT);
     }
     // Top-Left Corner
-    i = _domain.imin - 1;
+    i = 0;
     j = _domain.size_y + 1;
     _cells(i, j).set_neighbour(&_cells(i, j - 1), border_position::BOTTOM);
     _cells(i, j).set_neighbour(&_cells(i + 1, j), border_position::RIGHT);
@@ -123,7 +122,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
 
     // Bottom-Right Corner
     i = Grid::_domain.size_x + 1;
-    j = _domain.jmin - 1;
+    j = 0;
     _cells(i, j).set_neighbour(&_cells(i, j + 1), border_position::TOP);
     _cells(i, j).set_neighbour(&_cells(i - 1, j), border_position::LEFT);
     if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {
@@ -133,8 +132,8 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         _cells(i, j).add_border(border_position::LEFT);
     }
     // Bottom cells
-    j = _domain.jmin - 1;
-    for (int i = _domain.imin; i < _domain.size_x + 1; ++i) {
+    j = 0;
+    for (int i = 1; i < _domain.size_x + 1; ++i) {
         _cells(i, j).set_neighbour(&_cells(i + 1, j), border_position::RIGHT);
         _cells(i, j).set_neighbour(&_cells(i - 1, j), border_position::LEFT);
         _cells(i, j).set_neighbour(&_cells(i, j + 1), border_position::TOP);
@@ -152,7 +151,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     // Top Cells
     j = Grid::_domain.size_y + 1;
 
-    for (int i = _domain.imin; i < _domain.size_x + 1; ++i) {
+    for (int i = 1; i < _domain.size_x + 1; ++i) {
         _cells(i, j).set_neighbour(&_cells(i + 1, j), border_position::RIGHT);
         _cells(i, j).set_neighbour(&_cells(i - 1, j), border_position::LEFT);
         _cells(i, j).set_neighbour(&_cells(i, j - 1), border_position::BOTTOM);
@@ -168,8 +167,8 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     }
 
     // Left Cells
-    i = _domain.imin - 1;
-    for (int j = _domain.jmin; j < _domain.size_y + 1; ++j) {
+    i = 0;
+    for (int j = 1; j < _domain.size_y + 1; ++j) {
         _cells(i, j).set_neighbour(&_cells(i + 1, j), border_position::RIGHT);
         _cells(i, j).set_neighbour(&_cells(i, j - 1), border_position::BOTTOM);
         _cells(i, j).set_neighbour(&_cells(i, j + 1), border_position::TOP);
@@ -185,7 +184,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     }
     // Right Cells
     i = Grid::_domain.size_x + 1;
-    for (int j = _domain.jmin; j < _domain.size_y + 1; ++j) {
+    for (int j = 1; j < _domain.size_y + 1; ++j) {
         _cells(i, j).set_neighbour(&_cells(i - 1, j), border_position::LEFT);
         _cells(i, j).set_neighbour(&_cells(i, j - 1), border_position::BOTTOM);
         _cells(i, j).set_neighbour(&_cells(i, j + 1), border_position::TOP);
@@ -201,8 +200,8 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     }
 
     // Inner cells
-    for (int i = _domain.imin; i < _domain.size_x + 1; ++i) {
-        for (int j = _domain.jmin; j < _domain.size_y + 1; ++j) {
+    for (int i = 1; i < _domain.size_x + 1; ++i) {
+        for (int j = 1; j < _domain.size_y + 1; ++j) {
             _cells(i, j).set_neighbour(&_cells(i + 1, j), border_position::RIGHT);
             _cells(i, j).set_neighbour(&_cells(i - 1, j), border_position::LEFT);
             _cells(i, j).set_neighbour(&_cells(i, j + 1), border_position::TOP);
@@ -283,3 +282,4 @@ const std::vector<Cell *> &Grid::moving_wall_cells() const { return _moving_wall
 const std::vector<Cell *> &Grid::inflow_cells() const { return _inflow_cells; }
 
 const std::vector<Cell *> &Grid::outflow_cells() const { return _outflow_cells; }
+
