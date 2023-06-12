@@ -18,7 +18,7 @@ Fields::Fields(double gx, double gy, double nu, double dt, double tau, int imax,
 }
 
 //Added: Function implemented for second task.
-void Fields::calculate_fluxes(Grid &grid, Discretization &discretization, bool energy_eq) {
+void Fields::calculate_fluxes(Grid &grid, Discretization &discretization, bool energy_eq, Communication &communication) {
 	int i_idx{0};
 	int j_idx{0};
 	
@@ -41,6 +41,8 @@ void Fields::calculate_fluxes(Grid &grid, Discretization &discretization, bool e
 		_F(i_idx, j_idx) = _U(i_idx, j_idx) + _dt*(_nu*discretization.diffusion(_U, i_idx, j_idx) + discretization.convection_U(_U, _V, i_idx, j_idx)) + hydro_term_x;
 		_G(i_idx, j_idx) = _V(i_idx, j_idx) + _dt*(_nu*discretization.diffusion(_V, i_idx, j_idx) + discretization.convection_V(_U, _V, i_idx, j_idx)) + hydro_term_y;
 	}
+	communication.Communicate(_F);
+	communication.Communicate(_G);
 	
 }
 
@@ -57,7 +59,7 @@ void Fields::calculate_rs(Grid &grid) {
 }
 
 //Added: Function implemented for sixth task.
-void Fields::calculate_velocities(Grid &grid) {
+void Fields::calculate_velocities(Grid &grid, Communication &communication) {
 	int i_idx{0};
 	int j_idx{0};
 	
@@ -67,9 +69,11 @@ void Fields::calculate_velocities(Grid &grid) {
 		_U(i_idx, j_idx) = _F(i_idx, j_idx) - _dt*dPdx(i_idx, j_idx, grid);
 		_V(i_idx, j_idx) = _G(i_idx, j_idx) - _dt*dPdy(i_idx, j_idx, grid);
 	}
+	communication.Communicate(_U);
+	communication.Communicate(_V);
 }
 
-void Fields::calculate_temperatures(Grid &grid, Discretization &discretization){
+void Fields::calculate_temperatures(Grid &grid, Discretization &discretization, Communication &communication){
 	Matrix<double> new_T = _T;
 	int i_idx{0};
 	int j_idx{0};
@@ -80,15 +84,15 @@ void Fields::calculate_temperatures(Grid &grid, Discretization &discretization){
 		new_T(i_idx, j_idx) = t(i_idx, j_idx) + _dt*(_alpha*discretization.diffusion(_T, i_idx, j_idx) - discretization.convection_T(_T, _U, _V, i_idx, j_idx));
 	}
 	_T = new_T;
+	communication.Communicate(_T);
 }
 
-//Added: Function implemented for seventh task.
-double Fields::calculate_dt(Grid &grid, bool energy_eq) { 
-
+double Fields::calculate_maxU(Grid &grid){
+	
 	int i_idx{0};
 	int j_idx{0};
 	double max_u{0};
-	double max_v{0};
+	//double max_v{0};
 	for (const auto currentCell : grid.fluid_cells()){
 		i_idx = currentCell->i();
 		j_idx = currentCell->j();
@@ -96,14 +100,32 @@ double Fields::calculate_dt(Grid &grid, bool energy_eq) {
 		if (abs(_U(i_idx, j_idx)) > max_u){
 			max_u = abs(_U(i_idx, j_idx));
 		}
+	}
+	max_u = std::abs(*std::max_element(_U.data() + 1, _U.data() + grid.fluid_cells().size() + 1));
+	return max_u;
+  }
+  
+  double Fields::calculate_maxV(Grid &grid){	
+  
+	int i_idx{0};
+	int j_idx{0};
+	double max_v{0};
+	for (const auto currentCell : grid.fluid_cells()){
+		i_idx = currentCell->i();
+		j_idx = currentCell->j();
+		
 		if (abs(_V(i_idx, j_idx)) > max_v){
 			max_v = abs(_V(i_idx, j_idx));
 		}
 	}
 	
-	max_u = std::abs(*std::max_element(_U.data() + 1, _U.data() + grid.fluid_cells().size() + 1));
         max_v = std::abs(*std::max_element(_V.data() + 1, _V.data() + grid.fluid_cells().size() + 1));
-	
+        return max_v;
+  }
+
+//Added: Function implemented for seventh task.
+double Fields::calculate_dt(Grid &grid, bool energy_eq, double &max_u, double &max_v) { 
+
 	double dta = std::min(grid.dx()/max_u, grid.dy()/max_v);
 	double dtb = pow((1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0)), -1.0)/(2*_nu);
 	double dt = _tau*std::min(dta, dtb);

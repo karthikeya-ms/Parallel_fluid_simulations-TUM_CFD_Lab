@@ -31,7 +31,7 @@ namespace filesystem = std::experimental::filesystem;
 #include <vtkTuple.h>
 #include <limits>
 
-Case::Case(std::string file_name, int argn, char **, int my_rank, int size) {
+Case::Case(std::string file_name, int argn, char **args, size, my_rank) {
 //Case::Case(std::string file_name) {
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
@@ -63,6 +63,8 @@ Case::Case(std::string file_name, int argn, char **, int my_rank, int size) {
     std::string geo_file{"NONE"};     /* String with the name of the geometry file loaded */
     int iproc{1};    /* number of processors used to parallelize simulation in x-axis */
     int jproc{1};    /* number of processors used to parallelize simulation in x-axis */
+    int _argn = argn;
+    char **_args = args;
     
 
     if (file.is_open()) {
@@ -113,76 +115,66 @@ Case::Case(std::string file_name, int argn, char **, int my_rank, int size) {
     file.close();
 
     _datfile_name = file_name;
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    _my_rank = my_rank;
-    _size = size;
-
-    if (_iproc * _jproc != _size) {
-        Communication::finalize();
-        if (_my_rank == 0) {
-            std::cerr << "please check your iproc(number of processes for x-direction) and jproc(number of processes "
-                         "for y-direction). Their product should be the total number of processes for the problem"
-                      << std::endl;
-        }
-        exit(0);
-    }
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
+//This entire code is to add the no of processors to x and y axis data in the .dat file.    
     _iproc = iproc;
     _jproc = jproc;
-    
-    if ((_iproc == 1) and (_jproc == 1)){
-    	std::string question;
-	while ((question != "yes") and (question != "no")){
-		std::cout << "Specified number of processors on x and y-axis set to 1. Running simulation in sequential mode (only one processor), are you sure you want to continue? Please type 'yes' or 'no' to continue. If using parallelization (more processors) runtime can be significantly reduced:\n";
-		std::cin >> question;
-	}
-	if (question == "no"){
-		std::ofstream outFile(file_name, std::ios::app); // Open file in append mode
+   // _my_rank = my_rank;
+   // _size = size;
 
-	        if (!outFile) {
-		    std::cerr << "Error opening file " << file_name << " to add iproc and jproc parameters." << std::endl;
-		    exit(1);
-	        }
+    if (my_rank == 0) {// Messages displayed only by the root process
+        if ((_iproc == 1) and (_jproc == 1)){
+            std::string question;
+        while ((question != "yes") and (question != "no")){
+            std::cout << "Specified number of processors on x and y-axis set to 1. Running simulation in sequential mode (only one processor), are you sure you want to continue? Please type 'yes' or 'no' to continue. If using parallelization (more processors) runtime can be significantly reduced:\n";
+            std::cin >> question;
+        }
+        if (question == "no"){
+            std::ofstream outFile(file_name, std::ios::app); // Open file in append mode
 
-		std::cout << "Please input the number of processes for the x-axis:\n";
-		std::cin >> iproc;
-		
-		while (!std::cin.good())
-		{
-		    std::cin.clear();
-		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-		    std::cout << "Please input the number of processes for the x-axis:\n";
-		    std::cin >> iproc;
-		}
-		
-		std::cout << "Please input the number of processes for the y-axis:\n";
-		std::cin >> jproc;
-		while (!std::cin.good())
-		{
-		    std::cin.clear();
-		    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-		    std::cout << "Please input the number of processes for the y-axis:\n";
-		    std::cin >> jproc;
-		}
-		std::string lineToAdd1 = "iproc          " + std::to_string(iproc);
-		std::string lineToAdd2 = "jproc          " + std::to_string(jproc);
+                if (!outFile) {
+                std::cerr << "Error opening file " << file_name << " to add iproc and jproc parameters." << std::endl;
+                exit(1);
+                }
 
-	        outFile << lineToAdd1 << std::endl; // Write the line to the file
-	        outFile << lineToAdd2 << std::endl;
+            std::cout << "Please input the number of processes for the x-axis:\n";
+            std::cin >> iproc;
+            
+            while (!std::cin.good())
+            {
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                std::cout << "Please input the number of processes for the x-axis:\n";
+                std::cin >> iproc;
+            }
+            
+            std::cout << "Please input the number of processes for the y-axis:\n";
+            std::cin >> jproc;
+            while (!std::cin.good())
+            {
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                std::cout << "Please input the number of processes for the y-axis:\n";
+                std::cin >> jproc;
+            }
+            std::string lineToAdd1 = "iproc          " + std::to_string(iproc);
+            std::string lineToAdd2 = "jproc          " + std::to_string(jproc);
 
-	        outFile.close(); // Close the file
-	    
-	    	std::cout << "Thank you. Successfully added parameters to '.dat' file with " << iproc << " processors in x-axis, and " << jproc << " processors in y-axis." << std::endl;
-	    	std::cout << "Proceeding to terminate program. Please run again the scrip using the following command: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "'" << std::endl;
-	    	exit(0);	
-	}
-	else {
-		std::cout << "Proceeding to run simulation with only one processor." << std::endl;
-	}
+                outFile << lineToAdd1 << std::endl; // Write the line to the file
+                outFile << lineToAdd2 << std::endl;
+
+                outFile.close(); // Close the file
+            
+                std::cout << "Thank you. Successfully added parameters to '.dat' file with " << iproc << " processors in x-axis, and " << jproc << " processors in y-axis." << std::endl;
+                std::cout << "Proceeding to terminate program. Please run again the scrip using the following command: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "'" << std::endl;
+                exit(0);	
+        }
+        else {
+            std::cout << "Proceeding to run simulation with only one processor." << std::endl;
+        }
+        }
     }
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////     
     std::map<int, double> wall_vel;
     std::map<int, double> wall_temp;
     
@@ -207,74 +199,85 @@ Case::Case(std::string file_name, int argn, char **, int my_rank, int size) {
     int size, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//This code snippet decomposes the domain  
     
     if (_iproc*_jproc != size){
-    	std::cout << "Warning: iproc, jproc and number of processes specified at runtime do not match. Terminating program\nPlease make sure to run the code using the following command line: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "'" << std::endl;
-    	exit(1);
+        if (my_rank == 0) {// Message displayed only by the root process
+    	    std::cout << "Warning: iproc, jproc and number of processes specified at runtime do not match. Terminating program\nPlease make sure to run the code using the following command line: 'mpirun -np " << iproc*jproc << " ./fluidchen " << file_name << "'" << std::endl;
+        }
+        exit(1);
     }
     
-    std::cout << "iproc: " << _iproc << ". jproc: " << _jproc << ". Total number of threads: " << size << std::endl;
-    std::cout << "Total domain should have the following dimentions (number of cells, in x and y: (" << imax << ", " << jmax << ")." << std::endl;
-    
+    if (my_rank == 0) {// Message displayed only by the root process
+        std::cout << "iproc: " << _iproc << ". jproc: " << _jproc << ". Total number of threads: " << size << std::endl;
+        std::cout << "Total domain should have the following dimentions (number of cells, in x and y: (" << imax << ", " << jmax << ")." << std::endl;
+    }
+
     int imin_local;
     int imax_local;
     int jmin_local;
     int jmax_local;
     
+
     int my_x = my_rank%_iproc;
     int my_y = (my_rank - my_x)/_iproc;
+
+    if (my_rank == 0) {// Domain Decomposition done in the root process
     
-    if ((imax % _iproc) == 0){ //All processors take same number of tiles (x-axis).
-	imin_local = my_x*(imax/_iproc) + 1;
-	imax_local = (my_x + 1)*(imax/_iproc);
-	
-	if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
-		jmin_local = my_y*(jmax/_jproc) + 1;
-		jmax_local = (my_y + 1)*(jmax/_jproc);
-	}
-	else{ //Not all processors take same number of tiles (y-axis).
-	    	if (my_y < (jmax % _jproc)){ //Processors with an extra tile (y-axis).
-	    		jmin_local = my_y*(jmax/_jproc) + (my_y + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (my_y + 1);
-	 	}
-	 	else{ //Processors with no extra tile (y-axis).
-	 		jmin_local = my_y*(jmax/_jproc) + (jmax % _jproc + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (jmax % _jproc);
-	 	}
-	}
-	
-	    
-    }
-    
-    else{ //Not all processors take same number of tiles (x-axis).
-    	if (my_x < (imax % _iproc)){ //Processors with an extra tile (x-axis).
-    		imin_local = my_x*(imax/_iproc) + (my_x + 1);
-		imax_local = (my_x + 1)*(imax/_iproc) + (my_x + 1);
- 	}
- 	else{ //Processors with no extra tile (x-axis).
- 		imin_local = my_x*(imax/_iproc) + (imax % _iproc + 1);
-		imax_local = (my_x + 1)*(imax/_iproc) + (imax % _iproc);
- 	}
- 	if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
-		jmin_local = my_y*(jmax/_jproc) + 1;
-		jmax_local = (my_y + 1)*(jmax/_jproc);
-	}
-	else{ //Not all processors take same number of tiles (y-axis).
-	    	if (my_y < (jmax % _jproc)){ //Processors with an extra tile (y-axis).
-	    		jmin_local = my_y*(jmax/_jproc) + (my_y + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (my_y + 1);
-	 	}
-	 	else{ //Processors with no extra tile (y-axis).
-	 		jmin_local = my_y*(jmax/_jproc) + (jmax % _jproc + 1);
-			jmax_local = (my_y + 1)*(jmax/_jproc) + (jmax % _jproc);
-	 	}
-	}
+        if ((imax % _iproc) == 0){ //All processors take same number of tiles (x-axis).
+        imin_local = my_x*(imax/_iproc) + 1;
+        imax_local = (my_x + 1)*(imax/_iproc);
+        
+        if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
+            jmin_local = my_y*(jmax/_jproc) + 1;
+            jmax_local = (my_y + 1)*(jmax/_jproc);
+        }
+        else{ //Not all processors take same number of tiles (y-axis).
+                if (my_y < (jmax % _jproc)){ //Processors with an extra tile (y-axis).
+                    jmin_local = my_y*(jmax/_jproc) + (my_y + 1);
+                jmax_local = (my_y + 1)*(jmax/_jproc) + (my_y + 1);
+            }
+            else{ //Processors with no extra tile (y-axis).
+                jmin_local = my_y*(jmax/_jproc) + (jmax % _jproc + 1);
+                jmax_local = (my_y + 1)*(jmax/_jproc) + (jmax % _jproc);
+            }
+        }
+        
+            
+        }
+        
+        else{ //Not all processors take same number of tiles (x-axis).
+            if (my_x < (imax % _iproc)){ //Processors with an extra tile (x-axis).
+                imin_local = my_x*(imax/_iproc) + (my_x + 1);
+            imax_local = (my_x + 1)*(imax/_iproc) + (my_x + 1);
+        }
+        else{ //Processors with no extra tile (x-axis).
+            imin_local = my_x*(imax/_iproc) + (imax % _iproc + 1);
+            imax_local = (my_x + 1)*(imax/_iproc) + (imax % _iproc);
+        }
+        if ((jmax % _jproc) == 0){ //All processors take same number of tiles (y-axis).
+            jmin_local = my_y*(jmax/_jproc) + 1;
+            jmax_local = (my_y + 1)*(jmax/_jproc);
+        }
+        else{ //Not all processors take same number of tiles (y-axis).
+                if (my_y < (jmax % _jproc)){ //Processors with an extra tile (y-axis).
+                    jmin_local = my_y*(jmax/_jproc) + (my_y + 1);
+                jmax_local = (my_y + 1)*(jmax/_jproc) + (my_y + 1);
+            }
+            else{ //Processors with no extra tile (y-axis).
+                jmin_local = my_y*(jmax/_jproc) + (jmax % _jproc + 1);
+                jmax_local = (my_y + 1)*(jmax/_jproc) + (jmax % _jproc);
+            }
+        }
+        }
     }
     
     std::cout << "I am thread with id: " << my_rank << ". My x and y coordinates are: (" << my_x << ", " << my_y << "). I got assigned tiles from x-position: [" << imin_local << ", " << imax_local << "], and y-position: [" << jmin_local << ", " << jmax_local << "]." << std::endl;
     
     MPI_Finalize();
-    
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
     // Build up the domain
     Domain domain;
     domain.dx = xlength / static_cast<double>(imax);
@@ -287,6 +290,7 @@ Case::Case(std::string file_name, int argn, char **, int my_rank, int size) {
     _grid = Grid(_geom_name, domain);
     _field = Fields(GX, GY, nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, UIN, VIN, PI, TI, alpha, beta);
     Discretization _discretization(domain.dx, domain.dy, gamma);
+    _communication = Communication(_irpoc, _jproc, imax, jmax, argn, args);
     _pressure_solver = std::make_unique<SOR>(omg);
     _max_iter = itermax;
     _tolerance = eps;	
@@ -305,16 +309,16 @@ Case::Case(std::string file_name, int argn, char **, int my_rank, int size) {
     if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
     }
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    if (_my_rank == 0) {
-        output_log(_datfile_name, nu, UI, VI, PI, GX, GY, xlength, ylength, dt, imax, jmax, gamma, omg, tau, itermax,
-                   eps, TI, alpha, beta, num_walls);
-    }
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    if (_my_rank == 0) {
-    std::cout << "KILL PROGRAM" << std::endl;
-}
+    /*  --------------Optional Implementation for log files---------------
 
+    if (my_rank == 0) {
+        output_log(_datfile_name, nu, UI, VI, PI, GX, GY, xlength, ylength, dt, imax, jmax, gamma, omg, tau, itermax,
+                   eps, TI, alpha, beta, num_walls, Tc, Th, my_rank);
+    }*/
+    
+    std::cout << "KILL PROGRAM" << std::endl; //Include it in master process
+
+}//Case end (delete comment later)
 
 void Case::set_file_names(std::string file_name) {
     std::string temp_dir;
@@ -384,45 +388,82 @@ void Case::set_file_names(std::string file_name) {
  * For information about the classes and functions, you can check the header files.
  */
 void Case::simulate() {
+    
+    MPI_Init(&_argn, &_args);
+    int size, my_rank;
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    int master{0}; //rank of the master (Ask Hari about this!)
 
     double t = 0.0;
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
+    double maxu = 0; //local max u velocity
+    double maxv = 0; //local max v velocity
+    double buffu = 0; //send buffur for u
+    double buffv = 0; //send buffur for v 
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-     Case::output_vtk(timestep);
+/* --------------Optional Implementation for log files---------------
+    Case::output_vtk(timestep, my_rank);
     std::ofstream output;
     int progress, last_progress;
 
-    if (_my_rank == 0) {
+    if (my_rank == 0) {// Message displayed only by the root process
         std::string str = _dict_name + "_run_log_" + ".log";
 
         output.open(str, std::ios_base::app);
         output << "\n\nIteration Log:\n";
-        std::cout << "Simulation is Running!\nPlease Refer to " << _dict_name << "_run_log_"
-                  << ".log for Simulation log!\n";
+        std::cout << "Simulation is Running!\nPlease Refer to " << _dict_name << "_run_log_" << ".log for Simulation log!\n";
         // Simulation Progress
         if (Case::_energy_eq == "on") {
             std::cout << "\nEnergy Equation is On\n";
         }
     }
- /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
+*/    
     while (t < _t_end) {
 	    
-	    dt = _field.calculate_dt(_grid, _energy_eq);
-        dt = Communication::reduce_min(dt);
+	    //calculating the local max velocities
+	    buffu = _field.calculate_maxU(_grid); 
+	    buffv = _field.calculate_maxV(_grid);
+	    //If I am not the master, sending it to master
+	    if(my_rank != master){	
+	    	MPI_Send(buffu, 1, MPI_DOUBLE, 0, 123, MPI_COMM_WORLD);
+	    	MPI_Send(buffv, 1, MPI_DOUBLE, 0, 123, MPI_COMM_WORLD);
+	    	}
+	    //If I am the master, computing the global maximum velocities
+	    else{
+	    	std::vector<double>Globu{0}; //temporary variable for storing the local max u velocities of all processes 
+    		std::vector<double>Globv{0}; //temporary variable for storing the local max v velocities of all processes
+    		//inserting the local max velocities of the master
+    		Globu.push_back(buffu);      
+	    	Glubv.push_back(buffv);
+	    	//recieving the local max velocities from all the other processes 
+	    	MPI_Recv(buffu, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 123, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    	MPI_Recv(buffv, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 123, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    	//instering the local max velocities of all the other processes
+	    	Globu.push_back(buffu);
+	    	Glubv.push_back(buffv);
+	    	
+	    	//finding the global max velocities across all processes
+	    	for(auto i : Globu){
+	    		if(i > maxu){ maxu = i;}
+	    	}
+	    	for(auto i: Globv){
+	    		if(i > maxv){ maxv = i;}
+	    	}	
+	    }
+	    //Broadcasting the global max velocities to all other processes from the master
+	    MPI_Bcast(&maxu, 1, MPI_DOUBLE, master, MPI_COMM_WORLD);
+	    MPI_Bcast(&maxv, 1, MPI_DOUBLE, master, MPI_COMM_WORLD);
+	    
+	    dt = _field.calculate_dt(_grid, _energy_eq, maxu, maxv);
 	    
 	    if (_energy_eq == true){
-	    	_field.calculate_temperatures(_grid, _discretization);
-             // communicate temperature
-            Communication::communicate(_field.t_matrix(), domain);
+	    	_field.calculate_temperatures(_grid, _discretization, _communication);
 	    }
 	    
 	    _field.calculate_fluxes(_grid, _discretization, _energy_eq);
-        // communicate fluxes
-        Communication::communicate(_field.f_matrix(), domain);
-        Communication::communicate(_field.g_matrix(), domain);
 	    for (auto const& boundary : _boundaries){
 	    	boundary->apply(_field, _energy_eq);
 	    }
@@ -430,93 +471,38 @@ void Case::simulate() {
 	    _field.calculate_rs(_grid);
 	    
 	    int iter{0};
-	    double res = _pressure_solver->solve(_field, _grid, _boundaries); 
+	    double res = _pressure_solver->solve(_field, _grid, _boundaries, _communication); 
 	    while ((res > _tolerance) and (iter < _max_iter)) {
 	    	res = _pressure_solver->solve(_field, _grid, _boundaries);
-            // weighted addition of residuals
-            err = Communication::reduce_sum(err);
-            fluid_cells = _grid.fluid_cells().size();
-            fluid_cells = Communication::reduce_sum(fluid_cells);
-            err = std::sqrt(err / fluid_cells);
-            // communicate pressures
-            Communication::communicate(_field.p_matrix(), domain);
 	    	for (auto const& boundary : _boundaries){
 	    		boundary->apply(_field, _energy_eq);
 	    	}
 	    	iter = iter + 1;
 	    }
 	    
-	    if (std::ceil(t) == std::floor(t + dt)){
-	    	if (int(std::ceil(t)) % 2 == 0) {
-			std::cout << "SOR loop (for calculating pressure at the next time step from the Poisson equation) results:" << '\n';
-			std::cout << "t = " << t << ", res = " << res << ", tolerance = " << _tolerance << ", iter = " << iter << ", max iter = " << _max_iter <<  '\n';
-		}
-	    }
-	    
-	    _field.calculate_velocities(_grid);
-        Communication::communicate(_field.u_matrix(), domain);
-        Communication::communicate(_field.v_matrix(), domain);
+        if (my_rank == 0) {// Message displayed only by the root process
+            if (std::ceil(t) == std::floor(t + dt)){
+                if (int(std::ceil(t)) % 2 == 0) {
+                std::cout << "SOR loop (for calculating pressure at the next time step from the Poisson equation) results:" << '\n';
+                std::cout << "t = " << t << ", res = " << res << ", tolerance = " << _tolerance << ", iter = " << iter << ", max iter = " << _max_iter <<  '\n';
+            }
+            }
+        }
+	    _field.calculate_velocities(_grid, _communication);
 	    
 	    t = t + dt;
-    	timestep = timestep + 1;
-    	//output_vtk(timestep);
- //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
-        if (_my_rank == 0) {
-            output << std::setprecision(4) << std::fixed;
-        }
-        if (t - output_counter * _output_freq >= 0) {
-            Case::output_vtk(timestep);
-            if (_my_rank == 0) {
-                output << "Time: " << t << " Residual: " << err << " PPE Iterations: " << iter_count << std::endl;
-                if (iter_count == _max_iter || std::isnan(err)) {
-                    std::cout << "The PPE Solver didn't converge for Time = " << t
-                              << " Please check the log file and increase max iterations or other parameters for "
-                                 "convergence"
-                              << "\n";
-                }
-            }
-            output_counter += 1;
-        }
-        // Printing Simulation Progress
-        if (_my_rank == 0) {
-            progress = t / t_end * 100;
-            if (progress % 10 == 0 && progress != last_progress) {
-                std::cout << "Time Step: " << timestep << " Residue: " << err << " PPE Iterations: " << iter_count
-                          << std::endl;
-                std::cout << "[";
-                for (int i = 0; i < progress / 10; i++) {
-                    std::cout << "=====";
-                }
-                if (progress == 100)
-                    std::cout << "]";
-                else
-                    std::cout << ">";
-                std::cout << progress << "%\r";
-                std::cout.flush();
-                last_progress = progress;
-            }
-        }       
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+    	    timestep = timestep + 1;
+    	    output_vtk(timestep);
     }
-    if (t_end !=
-        (output_counter - 1) * _output_freq) // Recording at t_end if the output frequency is not a multiple of t_end
-    {
-        Case::output_vtk(timestep);
-        if (_my_rank == 0) {
-            output << "Time Step: " << timestep << " Residue: " << err << " PPE Iterations: " << iter_count
-                   << std::endl;
-        }
-        output_counter += 1;
-    }
-    if (_my_rank == 0) {
-        std::cout << "\nSimulation has ended\n";
-    }
-    output.close();
+MPI_Finalize();
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-void Case::output_vtk(int timestep) {
+
+
+
+
+void Case::output_vtk(int timestep, int my_rank) {
     // Create a new structured grid
     vtkSmartPointer<vtkStructuredGrid> structuredGrid = vtkSmartPointer<vtkStructuredGrid>::New();
 
@@ -621,15 +607,10 @@ void Case::output_vtk(int timestep) {
     // Write Grid
     vtkSmartPointer<vtkStructuredGridWriter> writer = vtkSmartPointer<vtkStructuredGridWriter>::New();
 
-    // // Create Filename
-    // std::string outputname =
-    //     _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
     // Create Filename
-    std::string outputname = _dict_name + '/' + _case_name + "_" + "_" +
-                             std::to_string(_my_rank) + "." + std::to_string(timestep) +
-                             ".vtk"; // 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+    std::string outputname =
+        _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk"; //Groups of VTK files generated based on rank
+
     writer->SetFileName(outputname.c_str());
     writer->SetInputData(structuredGrid);
     writer->Write();
@@ -643,14 +624,16 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
     domain.jmax = jmax_domain + 2;
     domain.size_x = imax_domain;
     domain.size_y = jmax_domain;
-
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+
+/*
+ --------------Optional Implementation for log files---------------
+
 void Case::output_log(std::string dat_file_name, double nu, double UI, double VI, double PI, double GX, double GY,
                       double xlength, double ylength, double dt, double imax, double jmax, double gamma, double omg,
                       double tau, double itermax, double eps, double TI, double alpha, double beta, double num_walls) {
 
-    std::string str = _dict_name + "_run_log_" + ".log";
+    std::string str = _dict_name + "_run_log_" + std::to_string(my_rank) + ".log";
     std::stringstream stream;
     std::ofstream output(str);
 
@@ -686,4 +669,70 @@ void Case::output_log(std::string dat_file_name, double nu, double UI, double VI
 
     output.close();
 }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+*/
+
+
+
+
+
+
+
+
+
+/*---------------------------Printing Simulation Progress here (Optional implementation)---------------------
+
+if (my_rank == 0) {// Message displayed only by the root process
+            output << std::setprecision(4) << std::fixed;
+        }
+        if (t - output_counter * _output_freq >= 0) {
+            Case::output_vtk(timestep);
+            if (my_rank == 0) {// Message displayed only by the root process
+                output << "Time: " << t << " Residual: " << err << " PPE Iterations: " << iter_count << std::endl;
+                if (iter_count == _max_iter || std::isnan(err)) {
+                    std::cout << "The PPE Solver didn't converge for Time = " << t
+                              << " Please check the log file and increase max iterations or other parameters for "
+                                 "convergence"
+                              << "\n";
+                }
+            }
+            output_counter += 1;
+        }
+        // Printing Simulation Progress
+        if (my_rank == 0) {// Message displayed only by the root process
+            progress = t / t_end * 100;
+            if (progress % 10 == 0 && progress != last_progress) {
+                std::cout << "Time Step: " << timestep << " Residue: " << res << " PPE Iterations: " << iter_count
+                          << std::endl;
+                std::cout << "[";
+                for (int i = 0; i < progress / 10; i++) {
+                    std::cout << "=====";
+                }
+                if (progress == 100)
+                    std::cout << "]";
+                else
+                    std::cout << ">";
+                std::cout << progress << "%\r";
+                std::cout.flush();
+                last_progress = progress;
+            }
+        }
+    }
+
+    if (t_end !=
+        (output_counter - 1) * _output_freq) // Recording at t_end if the output frequency is not a multiple of t_end
+    {
+        Case::output_vtk(timestep);
+        if (my_rank == 0) {
+            output << "Time Step: " << timestep << " Residue: " << res << " PPE Iterations: " << iter_count
+                   << std::endl;
+        }
+        output_counter += 1;
+    }
+    if (my_rank == 0) {// Message displayed only by the root process
+        std::cout << "\nSimulation has ended\n";
+    }
+    output.close();
+}
+*/
+
