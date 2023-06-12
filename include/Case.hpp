@@ -59,6 +59,7 @@ class Case {
     /// Solution file outputting frequency
     double _output_freq;
 
+    Communication _communication;
     Fields _field;
     Grid _grid;
     Discretization _discretization;
