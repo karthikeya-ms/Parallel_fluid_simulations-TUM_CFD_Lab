@@ -270,7 +270,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     domain.domain_size_y = jmax_local - jmin_local + 1;
 
     build_domain(domain, imax_local, jmax_local);
-    
+        
     _communication = Communication(_iproc, _jproc, domain);
     _grid = Grid(_geom_name, domain, iproc, jproc, imax, jmax);
     _field = Fields(GX, GY, nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, UIN, VIN, PI, TI, alpha, beta);
@@ -382,7 +382,7 @@ void Case::simulate() {
 	    //calculating the local max velocities
 	    buffu = _field.calculate_maxU(_grid); 
 	    buffv = _field.calculate_maxV(_grid);
-	    std::cout << "Thread " << my_rank << " with local max u,v:" << buffu << ", " << buffv << std::endl;
+	    //std::cout << "Thread " << my_rank << " with local max u,v:" << buffu << ", " << buffv << std::endl;
 	    //If I am not the master, sending it to master
 	    if(my_rank != master){	
 	    	MPI_Send(&buffu, 1, MPI_DOUBLE, 0, 123, MPI_COMM_WORLD);
@@ -395,12 +395,14 @@ void Case::simulate() {
     		//inserting the local max velocities of the master
     		Globu.push_back(buffu);      
 	    	Globv.push_back(buffv);
-	    	//recieving the local max velocities from all the other processes 
-	    	MPI_Recv(&buffu, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 123, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    	MPI_Recv(&buffv, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 123, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    	//instering the local max velocities of all the other processes
-	    	Globu.push_back(buffu);
-	    	Globv.push_back(buffv);
+	    	if (size != 1){
+		    	//recieving the local max velocities from all the other processes 
+		    	MPI_Recv(&buffu, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 123, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		    	MPI_Recv(&buffv, 1, MPI_DOUBLE, MPI_ANY_SOURCE, 123, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		    	//instering the local max velocities of all the other processes
+		    	Globu.push_back(buffu);
+		    	Globv.push_back(buffv);
+		}
 	    	
 	    	//finding the global max velocities across all processes
 	    	for(auto i : Globu){
@@ -408,7 +410,8 @@ void Case::simulate() {
 	    	}
 	    	for(auto i: Globv){
 	    		if(i > maxv){ maxv = i;}
-	    	}	
+	    	}
+	    		
 	    //Broadcasting the global max velocities to all other processes from the master
 	    MPI_Bcast(&maxu, 1, MPI_DOUBLE, master, MPI_COMM_WORLD);
 	    MPI_Bcast(&maxv, 1, MPI_DOUBLE, master, MPI_COMM_WORLD);
@@ -416,7 +419,7 @@ void Case::simulate() {
 	    MPI_Barrier(MPI_COMM_WORLD);
 	    
 	    dt = _field.calculate_dt(_grid, _energy_eq, maxu, maxv);
-	    std::cout<<"I have calculated dt = "<<dt<<std::endl;
+	    //std::cout<<"I have calculated dt = "<<dt<<std::endl;
 	    
 	    if (_energy_eq == true){
 	    	_field.calculate_temperatures(_grid, _discretization, _communication);

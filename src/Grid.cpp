@@ -16,24 +16,19 @@ Grid::Grid(std::string geom_name, Domain &domain, int _iproc, int _jproc, int im
     int *buffer[domain.jmax] = {0};
 
     _cells = Matrix<Cell>(_domain.size_x + 2, _domain.size_y + 2);
-
-    if (!geom_name.compare("NONE")) {
-        std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2,
-                                                    std::vector<int>(_domain.domain_size_y + 2, 0));
-        
+    if (geom_name.compare("NONE")) {
+        std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2, std::vector<int>(_domain.domain_size_y + 2, 0));
         if (my_rank == 0){
-        std::vector<std::vector<int>> geometry_master(imax+ 2,
-                                                    std::vector<int>(jmax + 2, 0));
-        	parse_geometry_file(geom_name, geometry_data);
-        	for (int i = _domain.imin - 1; i < _domain.imax + 1; ++i){
-			for(int j = _domain.jmin - 1; j < _domain.jmax + 1; ++j){
+        	std::vector<std::vector<int>> geometry_master(imax+ 2, std::vector<int>(jmax + 2, 0));
+		parse_geometry_file(geom_name, geometry_data);
+		for (int i = _domain.imin; i < _domain.imax; ++i){
+			for(int j = _domain.jmin; j < _domain.jmax; ++j){
 				geometry_data[i][j] = geometry_master[i][j];
 			}
-        		 
-		} 
+		}
 		
-        	for(int k = 1; k < size; ++k){
-        	
+		for(int k = 1; k < size; ++k){
+		
 			int imin_local;
 			int imax_local;
 			int jmin_local;
@@ -89,14 +84,14 @@ Grid::Grid(std::string geom_name, Domain &domain, int _iproc, int _jproc, int im
 	    	    }
 		   
 		for (int i = imin_local - 1; i < imax_local + 1; ++i){
-		        int s{0};
+			int s{0};
 			for(int j = jmin_local - 1; j < jmax_local + 1; ++j){
 				
 				*buffer[s] = geometry_data[i][j];
 				s++;
 			}
-        		MPI_Send(*buffer, s, MPI_INT, k, 1, MPI_COMM_WORLD);
-        		 
+			MPI_Send(*buffer, s, MPI_INT, k, 1, MPI_COMM_WORLD);
+			 
 		} 
         	
         	}

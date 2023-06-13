@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cmath>
+#include <math.h>
 
 Fields::Fields(double gx, double gy, double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double UIN, double VIN, double PI, double TI, double alpha, double beta)
     : _gx(gx), _gy(gy), _nu(nu), _dt(dt), _tau(tau), _imax(imax), _jmax(jmax), _alpha(alpha), _beta(beta) {
@@ -97,11 +98,10 @@ double Fields::calculate_maxU(Grid &grid){
 		i_idx = currentCell->i();
 		j_idx = currentCell->j();
 		
-		if (abs(_U(i_idx, j_idx)) > max_u){
-			max_u = abs(_U(i_idx, j_idx));
+		if (fabs(_U(i_idx, j_idx)) > max_u){
+			max_u = fabs(_U(i_idx, j_idx));
 		}
 	}
-	max_u = std::abs(*std::max_element(_U.data() + 1, _U.data() + grid.fluid_cells().size() + 1));
 	return max_u;
 }
   
@@ -114,11 +114,10 @@ double Fields::calculate_maxV(Grid &grid){
 		i_idx = currentCell->i();
 		j_idx = currentCell->j();
 		
-		if (abs(_V(i_idx, j_idx)) > max_v){
-			max_v = abs(_V(i_idx, j_idx));
+		if (fabs(_V(i_idx, j_idx)) > max_v){
+			max_v = fabs(_V(i_idx, j_idx));
 		}
 	}
-	max_v = std::abs(*std::max_element(_V.data() + 1, _V.data() + grid.fluid_cells().size() + 1));
 	return max_v;
 }
 
