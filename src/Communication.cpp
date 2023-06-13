@@ -402,6 +402,21 @@ double Communication::reduce_min(const Matrix<double> &A){
 	return globalMin;
 }
 
+double Communication::reduce_max(const Matrix<double> &A){
+	
+	std::vector<double> vec;
+	for(int i = 1; i < x_dim; ++i){
+		for(int j = 1; j < y_dim; ++j){
+			vec.push_back(A(i,j));
+		}
+	}
+	double localMax; 
+	localMax = *std::max_element(vec.begin(),vec.end());
+	double globalMax;
+	MPI_Allreduce(&localMax, &globalMax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+	return globalMax;
+}
+
 double Communication::reduce_sum(const double residual){
 	
 	double globalSum;

@@ -386,10 +386,12 @@ void Case::simulate() {
 	    buffv = _field.calculate_maxV(_grid);
 	    //std::cout << "Thread " << my_rank << " with local max u,v:" << buffu << ", " << buffv << std::endl;
 	    //If I am not the master, sending it to master
+	    /*
 	    if(my_rank != master){	
 	    	MPI_Send(&buffu, 1, MPI_DOUBLE, 0, 123, MPI_COMM_WORLD);
 	    	MPI_Send(&buffv, 1, MPI_DOUBLE, 0, 123, MPI_COMM_WORLD);
 	    }
+	    
 	    //If I am the master, computing the global maximum velocities
 	    else{
 	    	std::vector<double>Globu; //temporary variable for storing the local max u velocities of all processes 
@@ -413,10 +415,16 @@ void Case::simulate() {
 	    	for(auto i: Globv){
 	    		if(i > maxv){ maxv = i;}
 	    	}
+	    	*/
+	    	
+	    if (my_rank == 0){
+	    	maxu = _communication.reduce_max(_field.u_matrix());
+	    	maxv = _communication.reduce_max(_field.v_matrix());
 	    		
 	        //Broadcasting the global max velocities to all other processes from the master
 	        MPI_Bcast(&maxu, 1, MPI_DOUBLE, master, MPI_COMM_WORLD);
 	        MPI_Bcast(&maxv, 1, MPI_DOUBLE, master, MPI_COMM_WORLD);
+	    	std::cout << "Thread number " << my_rank << " just broadcasted max reduced u = " << maxu << " and mac reduced v = " << maxv << std::endl;
 	    }
 	    
 	    MPI_Barrier(MPI_COMM_WORLD);
@@ -443,8 +451,11 @@ void Case::simulate() {
 	    	for (auto const& boundary : _boundaries){
 	    		boundary->apply(_field, _energy_eq);
 	    	}
-	    	totalres = _communication.reduce_sum(res);
-	    	MPI_Bcast(&totalres, 1, MPI_DOUBLE, master, MPI_COMM_WORLD);
+	    	if (my_rank == 0){
+	    		totalres = _communication.reduce_sum(res);
+	    		MPI_Bcast(&totalres, 1, MPI_DOUBLE, master, MPI_COMM_WORLD);
+	    		std::cout << "Thread number " << my_rank << " just broadcasted reduced residual = " << totalres << std::endl;
+	    	}
 	    	iter = iter + 1;
 	    	MPI_Barrier(MPI_COMM_WORLD);
 	    }

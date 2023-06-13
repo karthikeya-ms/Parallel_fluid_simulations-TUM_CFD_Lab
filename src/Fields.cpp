@@ -145,6 +145,8 @@ double &Fields::rs(int i, int j) { return _RS(i, j); }
 double &Fields::t(int i, int j) { return _T(i, j); }
 
 Matrix<double> &Fields::p_matrix() { return _P; }
+Matrix<double> &Fields::u_matrix() { return _U; }
+Matrix<double> &Fields::v_matrix() { return _V; }
 
 double Fields::dt() const { return _dt; }
 

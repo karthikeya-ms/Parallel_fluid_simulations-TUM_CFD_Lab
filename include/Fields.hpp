@@ -102,6 +102,12 @@ class Fields {
 
     /// pressure matrix access and modify
     Matrix<double> &p_matrix();
+    
+    /// u matrix access and modify
+    Matrix<double> &u_matrix();
+    
+    /// v matrix access and modify
+    Matrix<double> &v_matrix();
 
     //Added: Headers of helper functions containing derivative terms to compute pressure derivatives.
     double dPdx(int i_idx, int j_idx, Grid &grid);

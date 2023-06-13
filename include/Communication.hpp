@@ -13,6 +13,7 @@ class Communication{
          	Communication(int iproc, int jproc, Domain &domain);
 		void communicate(Matrix<double> &A);                  //Function to communicate between the field across all parallel neighbouring threads
 		double reduce_min(const Matrix<double> &A);
+		double reduce_max(const Matrix<double> &A);
 		double reduce_sum(const double residual);
 	private:
 		

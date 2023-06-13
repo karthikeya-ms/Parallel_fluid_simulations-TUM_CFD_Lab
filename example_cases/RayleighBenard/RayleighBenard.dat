@@ -83,3 +83,5 @@ num_walls    3
 wall_temp_3  -1
 wall_temp_4  294.78
 wall_temp_5  291.20
+iproc          2
+jproc          1
