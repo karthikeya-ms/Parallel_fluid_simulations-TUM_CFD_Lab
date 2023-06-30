@@ -117,106 +117,106 @@ Case::Case(std::string file_name, int argn, char **args) {
     
 
 
-    std::map<int, double> wall_vel;
-    if (_geom_name.compare("NONE") == 0) {
-        wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
-    }
+    // std::map<int, double> wall_vel;
+    // if (_geom_name.compare("NONE") == 0) {
+    //     wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
+    // }
 
-    // Set file names for geometry file and output directory
-    set_file_names(file_name); //function call
+    // // Set file names for geometry file and output directory
+    // set_file_names(file_name); //function call
 
-    // Build up the domain
-    Domain domain; //check Domain.hpp in case of doubts
-    domain.dx = xlength / (double)imax; //cell size in x direction
-    domain.dy = ylength / (double)jmax; //cell size in y direction
-    domain.domain_size_x = imax;
-    domain.domain_size_y = jmax;
+    // // Build up the domain
+    // Domain domain; //check Domain.hpp in case of doubts
+    // domain.dx = xlength / (double)imax; //cell size in x direction
+    // domain.dy = ylength / (double)jmax; //cell size in y direction
+    // domain.domain_size_x = imax;
+    // domain.domain_size_y = jmax;
 
-    build_domain(domain, imax, jmax); //function call
+    // build_domain(domain, imax, jmax); //function call
 
-    _grid = Grid(_geom_name, domain); //The line of code _grid = Grid(_geom_name, domain); is assigning a newly created Grid object to an existing _grid object
-    _field = Fields(nu, dt, tau, alpha, beta, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, GX, GY, _grid, energy_eq);
+    // _grid = Grid(_geom_name, domain); //The line of code _grid = Grid(_geom_name, domain); is assigning a newly created Grid object to an existing _grid object
+    // _field = Fields(nu, dt, tau, alpha, beta, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, GX, GY, _grid, energy_eq);
 
-    _discretization = Discretization(domain.dx, domain.dy, gamma);
-    _pressure_solver = std::make_unique<SOR>(omg);
-    _max_iter = itermax;
-    _tolerance = eps;
+    // _discretization = Discretization(domain.dx, domain.dy, gamma);
+    // _pressure_solver = std::make_unique<SOR>(omg);
+    // _max_iter = itermax;
+    // _tolerance = eps;
 
-    // Construct boundaries
-    if (not _grid.moving_wall_cells().empty()) {
-        _boundaries.push_back(
-            std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), LidDrivenCavity::wall_velocity));
-    }
-    if (not _grid.fixed_wall_cells().empty()) {
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
-    }
-    if (not _grid.hot_wall_cells().empty()) {
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.hot_wall_cells(), hotwall_temp));
-    }
-    if (not _grid.cold_wall_cells().empty()) {
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.cold_wall_cells(), coldwall_temp));
-    }
-    if (not _grid.inflow_cells().empty()) {
-        _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(),UIN, VIN));
-    }
-    double Pout = 0.0;
-    if (not _grid.outflow_cells().empty()) {
-        _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells(),Pout));
-    }
+    // // Construct boundaries
+    // if (not _grid.moving_wall_cells().empty()) {
+    //     _boundaries.push_back(
+    //         std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), LidDrivenCavity::wall_velocity));
+    // }
+    // if (not _grid.fixed_wall_cells().empty()) {
+    //     _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
+    // }
+    // if (not _grid.hot_wall_cells().empty()) {
+    //     _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.hot_wall_cells(), hotwall_temp));
+    // }
+    // if (not _grid.cold_wall_cells().empty()) {
+    //     _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.cold_wall_cells(), coldwall_temp));
+    // }
+    // if (not _grid.inflow_cells().empty()) {
+    //     _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(),UIN, VIN));
+    // }
+    // double Pout = 0.0;
+    // if (not _grid.outflow_cells().empty()) {
+    //     _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells(),Pout));
+    // }
 } //End of Case constructor
 
-void Case::set_file_names(std::string file_name) {
-    std::string temp_dir;
-    bool case_name_flag = true;
-    bool prefix_flag = false;
+// void Case::set_file_names(std::string file_name) {
+//     std::string temp_dir;
+//     bool case_name_flag = true;
+//     bool prefix_flag = false;
 
-    for (int i = file_name.size() - 1; i > -1; --i) {
-        if (file_name[i] == '/') {
-            case_name_flag = false;
-            prefix_flag = true;
-        }
-        if (case_name_flag) {
-            _case_name.push_back(file_name[i]);
-        }
-        if (prefix_flag) {
-            _prefix.push_back(file_name[i]);
-        }
-    }
+//     for (int i = file_name.size() - 1; i > -1; --i) {
+//         if (file_name[i] == '/') {
+//             case_name_flag = false;
+//             prefix_flag = true;
+//         }
+//         if (case_name_flag) {
+//             _case_name.push_back(file_name[i]);
+//         }
+//         if (prefix_flag) {
+//             _prefix.push_back(file_name[i]);
+//         }
+//     }
 
-    for (int i = file_name.size() - _case_name.size() - 1; i > -1; --i) {
-        temp_dir.push_back(file_name[i]);
-    }
+//     for (int i = file_name.size() - _case_name.size() - 1; i > -1; --i) {
+//         temp_dir.push_back(file_name[i]);
+//     }
 
-    std::reverse(_case_name.begin(), _case_name.end());
-    std::reverse(_prefix.begin(), _prefix.end());
-    std::reverse(temp_dir.begin(), temp_dir.end());
+//     std::reverse(_case_name.begin(), _case_name.end());
+//     std::reverse(_prefix.begin(), _prefix.end());
+//     std::reverse(temp_dir.begin(), temp_dir.end());
 
-    _case_name.erase(_case_name.size() - 4);
-    _dict_name = temp_dir;
-    _dict_name.append(_case_name);
-    _dict_name.append("_Output");
+//     _case_name.erase(_case_name.size() - 4);
+//     _dict_name = temp_dir;
+//     _dict_name.append(_case_name);
+//     _dict_name.append("_Output");
 
-    if (_geom_name.compare("NONE") != 0) {
-        _geom_name = _prefix + _geom_name;
-    }
+//     if (_geom_name.compare("NONE") != 0) {
+//         _geom_name = _prefix + _geom_name;
+//     }
     
-    filesystem::path folder(_dict_name);
+//     filesystem::path folder(_dict_name);
 
-    //Check if directory already exists, delete it if it does
-    if (filesystem::exists(_dict_name) == 1){
-        filesystem::remove_all(folder);
-    }
+//     //Check if directory already exists, delete it if it does
+//     if (filesystem::exists(_dict_name) == 1){
+//         filesystem::remove_all(folder);
+//     }
 
-    // Create output directory 
-    try {
-        filesystem::create_directory(folder);
-    } catch (const std::exception &e) {
-        std::cerr << "Output directory could not be created." << std::endl;
-        std::cerr << "Make sure that you have write permissions to the "
-                     "corresponding location"
-                  << std::endl;
-    }
-}
+//     // Create output directory 
+//     try {
+//         filesystem::create_directory(folder);
+//     } catch (const std::exception &e) {
+//         std::cerr << "Output directory could not be created." << std::endl;
+//         std::cerr << "Make sure that you have write permissions to the "
+//                      "corresponding location"
+//                   << std::endl;
+//     }
+// }
 
 /**
  * This function is the main simulation loop. In the simulation loop, following steps are required
@@ -260,7 +260,7 @@ void Case::simulate() {
 
 		doStreaming(collideField, streamField, flagField, _xlength);
 
-        std::cout<<"streamField "<<*streamField<<"  collideField "<<*collideField<<std::endl;
+        //std::cout<<"streamField "<<*streamField<<"  collideField "<<*collideField<<std::endl;
 
 		swap = collideField;
 		collideField = streamField;
@@ -338,126 +338,126 @@ void Case::simulate() {
     delete[] flagField;
 }
 
-void Case::output_vtk(int timestep, int my_rank) {
+// void Case::output_vtk(int timestep, int my_rank) {
     
-    // Create a new structured grid
-    vtkSmartPointer<vtkStructuredGrid> structuredGrid = vtkSmartPointer<vtkStructuredGrid>::New();
+//     // Create a new structured grid
+//     vtkSmartPointer<vtkStructuredGrid> structuredGrid = vtkSmartPointer<vtkStructuredGrid>::New();
 
-    // Create grid
-    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+//     // Create grid
+//     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-    double dx = _grid.dx();
-    double dy = _grid.dy();
+//     double dx = _grid.dx();
+//     double dy = _grid.dy();
 
-    double x = _grid.domain().imin * dx;
-    double y = _grid.domain().jmin * dy;
+//     double x = _grid.domain().imin * dx;
+//     double y = _grid.domain().jmin * dy;
 
-    { y += dy; }
-    { x += dx; }
+//     { y += dy; }
+//     { x += dx; }
     
-    double z = 0;
-    std::vector<vtkIdType> current_cell;
+//     double z = 0;
+//     std::vector<vtkIdType> current_cell;
 
-    for (int col = 0; col < _grid.domain().size_y + 1; col++) {
-        x = _grid.domain().imin * dx;
-        { x += dx; }
-        for (int row = 0; row < _grid.domain().size_x + 1; row++) {
-            current_cell.push_back(points->InsertNextPoint(x, y, z));
-            x += dx;
-        }
-        y += dy;
-    }
+//     for (int col = 0; col < _grid.domain().size_y + 1; col++) {
+//         x = _grid.domain().imin * dx;
+//         { x += dx; }
+//         for (int row = 0; row < _grid.domain().size_x + 1; row++) {
+//             current_cell.push_back(points->InsertNextPoint(x, y, z));
+//             x += dx;
+//         }
+//         y += dy;
+//     }
 
-    // Specify the dimensions of the grid
-    structuredGrid->SetDimensions(_grid.domain().size_x + 1, _grid.domain().size_y + 1, 1);
-    structuredGrid->SetPoints(points);
+//     // Specify the dimensions of the grid
+//     structuredGrid->SetDimensions(_grid.domain().size_x + 1, _grid.domain().size_y + 1, 1);
+//     structuredGrid->SetPoints(points);
 
 
-    // Output obstacle cells as blank cells
-    int k=0;
-    for (int col = 0; col < _grid.domain().size_y + 1; col++) {
-        for (int row = 0; row < _grid.domain().size_x + 1; row++) {
-            if(_grid.cell(row,col).type() != cell_type::FLUID){
-                structuredGrid->BlankPoint(current_cell[k]);
-            }
-        k++;
-        }
-    }
+//     // Output obstacle cells as blank cells
+//     int k=0;
+//     for (int col = 0; col < _grid.domain().size_y + 1; col++) {
+//         for (int row = 0; row < _grid.domain().size_x + 1; row++) {
+//             if(_grid.cell(row,col).type() != cell_type::FLUID){
+//                 structuredGrid->BlankPoint(current_cell[k]);
+//             }
+//         k++;
+//         }
+//     }
 
-    // Pressure Array
-    vtkDoubleArray *Pressure = vtkDoubleArray::New();
-    Pressure->SetName("pressure");
-    Pressure->SetNumberOfComponents(1);
+//     // Pressure Array
+//     vtkDoubleArray *Pressure = vtkDoubleArray::New();
+//     Pressure->SetName("pressure");
+//     Pressure->SetNumberOfComponents(1);
 
-    // Temperature Array
-    vtkDoubleArray *Temperature = vtkDoubleArray::New();
-    Temperature->SetName("Temperature");
-    Temperature->SetNumberOfComponents(1);
+//     // Temperature Array
+//     vtkDoubleArray *Temperature = vtkDoubleArray::New();
+//     Temperature->SetName("Temperature");
+//     Temperature->SetNumberOfComponents(1);
 
-    // Velocity Array
-    vtkDoubleArray *Velocity = vtkDoubleArray::New();
-    Velocity->SetName("velocity");
-    Velocity->SetNumberOfComponents(3);
+//     // Velocity Array
+//     vtkDoubleArray *Velocity = vtkDoubleArray::New();
+//     Velocity->SetName("velocity");
+//     Velocity->SetNumberOfComponents(3);
 
-    // Print pressure from bottom to top
-    for (int j = 1; j < _grid.domain().size_y + 1; j++) {
-        for (int i = 1; i < _grid.domain().size_x + 1; i++) {
-            double pressure = _field.p(i, j);
-            Pressure->InsertNextTuple(&pressure);
-        }
-    }
+//     // Print pressure from bottom to top
+//     for (int j = 1; j < _grid.domain().size_y + 1; j++) {
+//         for (int i = 1; i < _grid.domain().size_x + 1; i++) {
+//             double pressure = _field.p(i, j);
+//             Pressure->InsertNextTuple(&pressure);
+//         }
+//     }
     
-    // Print temperature from bottom to top
-    for (int j = 1; j < _grid.domain().size_y + 1; j++) {
-        for (int i = 1; i < _grid.domain().size_x + 1; i++) {
-            double temp = _field.T(i, j);
-            Temperature->InsertNextTuple(&temp);
-        }
-    }
+//     // Print temperature from bottom to top
+//     for (int j = 1; j < _grid.domain().size_y + 1; j++) {
+//         for (int i = 1; i < _grid.domain().size_x + 1; i++) {
+//             double temp = _field.T(i, j);
+//             Temperature->InsertNextTuple(&temp);
+//         }
+//     }
 
-    // Temp Velocity
-    float vel[3];
-    vel[2] = 0; // Set z component to 0
+//     // Temp Velocity
+//     float vel[3];
+//     vel[2] = 0; // Set z component to 0
 
-    // Print Velocity from bottom to top
-    for (int j = 0; j < _grid.domain().size_y + 1; j++) {
-        for (int i = 0; i < _grid.domain().size_x + 1; i++) {
-            vel[0] = (_field.u(i, j) + _field.u(i, j + 1)) * 0.5;
-            vel[1] = (_field.v(i, j) + _field.v(i + 1, j)) * 0.5;
-            Velocity->InsertNextTuple(vel);
-        }
-    }
+//     // Print Velocity from bottom to top
+//     for (int j = 0; j < _grid.domain().size_y + 1; j++) {
+//         for (int i = 0; i < _grid.domain().size_x + 1; i++) {
+//             vel[0] = (_field.u(i, j) + _field.u(i, j + 1)) * 0.5;
+//             vel[1] = (_field.v(i, j) + _field.v(i + 1, j)) * 0.5;
+//             Velocity->InsertNextTuple(vel);
+//         }
+//     }
 
-    // Add Pressure to Structured Grid
-    structuredGrid->GetCellData()->AddArray(Pressure);
+//     // Add Pressure to Structured Grid
+//     structuredGrid->GetCellData()->AddArray(Pressure);
 
-    // Add Temperature to Structured Grid
-    if(_field.Energy() == "on"){
-        structuredGrid->GetCellData()->AddArray(Temperature);
-    }
-    // Add Velocity to Structured Grid
-    structuredGrid->GetPointData()->AddArray(Velocity);
+//     // Add Temperature to Structured Grid
+//     if(_field.Energy() == "on"){
+//         structuredGrid->GetCellData()->AddArray(Temperature);
+//     }
+//     // Add Velocity to Structured Grid
+//     structuredGrid->GetPointData()->AddArray(Velocity);
 
-    // Write Grid
-    vtkSmartPointer<vtkStructuredGridWriter> writer = vtkSmartPointer<vtkStructuredGridWriter>::New();
+//     // Write Grid
+//     vtkSmartPointer<vtkStructuredGridWriter> writer = vtkSmartPointer<vtkStructuredGridWriter>::New();
 
-    // Create Filename
-    std::string outputname =
-        _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
+//     // Create Filename
+//     std::string outputname =
+//         _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
 
-    writer->SetFileName(outputname.c_str());
-    writer->SetInputData(structuredGrid);
-    writer->Write();
-}
+//     writer->SetFileName(outputname.c_str());
+//     writer->SetInputData(structuredGrid);
+//     writer->Write();
+// }
 
-void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
-    domain.imin = 0;
-    domain.jmin = 0;
-    domain.imax = imax_domain + 2;
-    domain.jmax = jmax_domain + 2;
-    domain.size_x = imax_domain;
-    domain.size_y = jmax_domain;
-}
+// void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
+//     domain.imin = 0;
+//     domain.jmin = 0;
+//     domain.imax = imax_domain + 2;
+//     domain.jmax = jmax_domain + 2;
+//     domain.size_x = imax_domain;
+//     domain.size_y = jmax_domain;
+// }
 
 
 
