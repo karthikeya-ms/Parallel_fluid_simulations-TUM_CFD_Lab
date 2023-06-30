@@ -10,6 +10,7 @@
 #include "Fields.hpp"
 #include "Grid.hpp"
 #include "PressureSolver.hpp"
+#include "Enums.hpp"
 
 /**
  * @brief Class to hold and orchestrate the simulation flow.
@@ -41,18 +42,27 @@ class Case {
   private:
     /// Plain case name without paths
     std::string _case_name;
-    /// Output directory name
+    /// Output directiory name
     std::string _dict_name;
     /// Geometry file name
     std::string _geom_name{"NONE"};
     /// Relative input file path
     std::string _prefix;
-
     /// Simulation time
     double _t_end;
     /// Solution file outputting frequency
     double _output_freq;
+  /////////////////////////////////////////////////////////////////////////////
+    double _timesteps;
+    double _timestepsPerPlotting;
+    int _xlength;
+    double _tau; 
+    double _velocityWallX;
+    double _velocityWallY;
 
+
+    
+  //////////////////////////////////////////////////////////////////////////
     Fields _field;
     Grid _grid;
     Discretization _discretization;
@@ -87,4 +97,14 @@ class Case {
     void output_vtk(int t, int my_rank = 0);
 
     void build_domain(Domain &domain, int imax_domain, int jmax_domain);
+
+    /* initialises the particle distribution functions and the flagfield */
+    void initializeFields(double *collideField, double *streamField,int *flagField, int xlength);
+
+    /** writes the density and velocity field (derived from the distributions in collideField)
+ *  to a file determined by 'filename' and timestep 't'. You can re-use parts of the code
+ *  from visual.c (VTK output for Navier-Stokes solver) and modify it for 3D datasets.
+ */
+    void writeVtkOutput(const double * const collideField, const int * const flagField, const char * filename, unsigned int t, int xlength);
+    
 };

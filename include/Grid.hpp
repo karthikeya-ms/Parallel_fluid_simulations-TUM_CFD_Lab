@@ -22,8 +22,11 @@ class Grid {
     /**
      * @brief Constructor for the Grid
      *
-     * @param[in] geom_name geometry file name
-     * @param[in] domain struct storing geometry information
+     * @param[in] geometry file name
+     * @param[in] number of cells in x direction
+     * @param[in] number of cells in y direction
+     * @param[in] cell size in x direction
+     * @param[in] cell size in y direction
      *
      */
     Grid(std::string geom_name, Domain &domain);
@@ -68,6 +71,12 @@ class Grid {
      * @param[out] vector of fixed wall cells
      */
     const std::vector<Cell *> &fixed_wall_cells() const;
+    const std::vector<Cell *> &inflow_cells() const;
+    const std::vector<Cell *> &outflow_cells() const;
+    const std::vector<Cell *> &adiabatic_wall_cells() const;
+    const std::vector<Cell *> &hot_wall_cells() const;
+    const std::vector<Cell *> &cold_wall_cells() const;
+
 
   private:
     /**@brief Default lid driven cavity case generator
@@ -81,9 +90,16 @@ class Grid {
     void assign_cell_types(std::vector<std::vector<int>> &geometry_data);
     /// Extract geometry from pgm file and create geometrical data
     void parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data);
+    /// Check that wall cells are not forbidden
+    void check_forbidden_cells();
 
     Matrix<Cell> _cells;
+    std::vector<Cell *> _inflow_cells;
+    std::vector<Cell *> _outflow_cells;
     std::vector<Cell *> _fluid_cells;
+    std::vector<Cell *> _adiabatic_wall_cells;
+    std::vector<Cell *> _hot_wall_cells;
+    std::vector<Cell *> _cold_wall_cells;
     std::vector<Cell *> _fixed_wall_cells;
     std::vector<Cell *> _moving_wall_cells;
 

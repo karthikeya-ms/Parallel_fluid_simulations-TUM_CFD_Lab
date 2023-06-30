@@ -62,6 +62,9 @@ class Discretization {
      * @param[out] result
      *
      */
+    
+    static double convection_T(const Matrix<double> &T, const Matrix<double> &U, const Matrix<double> &V, int i, int j);
+
     static double laplacian(const Matrix<double> &P, int i, int j);
 
     /**
@@ -77,18 +80,15 @@ class Discretization {
     static double sor_helper(const Matrix<double> &P, int i, int j);
 
     /**
-     * @brief Compute interpolated value in the middle between two grid points via linear interpolation.
+     * @brief Linear interpolation
      *
-     * @param[in] A data to be interpolated
-     * @param[in] i index of first value used for interpolation
-     * @param[in] j index of first value used for interpolation
-     * @param[in] i_offset defines index of the second value used for interpolation as i+i_offset
-     * @param[in] j_offset defines index of the second value used for interpolation as j+j_offset
+     * @param[in] data to be interpolated
+     * @param[in] x index
+     * @param[in] y index
      * @param[out] result
      *
      */
     static double interpolate(const Matrix<double> &A, int i, int j, int i_offset, int j_offset);
-    static double gamma();
 
   private:
     static double _dx;
