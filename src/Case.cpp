@@ -62,9 +62,8 @@ Case::Case(std::string file_name, int argn, char **args) {
     //////////////////////////
     double timesteps;
     double timestepsPerPlotting;    
-    double velocityWallX;
-    double velocityWallY;
     double Re;
+    double velocityWall[3]={1.0, 0.0, 0.0};
 
     if (file.is_open()) {
 
@@ -76,8 +75,9 @@ Case::Case(std::string file_name, int argn, char **args) {
             } else {
                 if (var == "timesteps") file >> _timesteps;
                 if (var == "timestepsPerPlotting") file >> _timestepsPerPlotting;
-                if (var == "velocityWallX") file >> _velocityWallX;
-                if (var == "velocityWallY") file >> _velocityWallY;
+                if (var == "velocityWallx") file >> velocityWall[0];
+                if (var == "velocityWally") file >> velocityWall[1];
+                if (var == "velocityWallz") file >> velocityWall[2];
                 if (var == "Re") file >> Re;
                 if (var == "xlength") file >> _xlength;
                 if (var == "ylength") file >> ylength;
@@ -113,6 +113,8 @@ Case::Case(std::string file_name, int argn, char **args) {
         }
     }
     file.close();
+
+    //std::cout<<"Velocity "<<velocityWall[0]<<std::endl;
 
     
 
@@ -240,37 +242,43 @@ Case::Case(std::string file_name, int argn, char **args) {
 void Case::simulate() {
      std::cout << "Simulation started. \n";
      double t = 0.0;
+     int _xlength=50;
+	 double _tau=1.4;
+	 double velocityWall[3]={1.0, 0.0, 0.0};
+	 int _timesteps=50;
+	 int _timestepsPerPlotting=2;
+
      double *collideField = nullptr;
      double *streamField = nullptr;
      int *flagField = nullptr;
      double *swap = nullptr;
+     int len = (_xlength + 2)*(_xlength + 2)*(_xlength + 2);
 
-     
+
+
     // initialize space for pointers
-    collideField = new double[Q * (_xlength + 2) * (_xlength + 2) ];
-    streamField = new double[Q * (_xlength + 2) * (_xlength + 2) ];
-    flagField = new int[(_xlength + 2) * (_xlength + 2)];
-
-
+    collideField = new double[Q * len];
+    streamField = new double[Q * len ];
+    flagField = new int[len];
     initializeFields(collideField, streamField, flagField, _xlength);
+    std::cout<<"Velocity"<<velocityWall[0]<<velocityWall[1]<<velocityWall[2]<<std::endl;
 
      for(t = 0; t < _timesteps; t++)
 	{
         //std::cout<<"collideField"<<*collideField<<std::endl;
 
 		doStreaming(collideField, streamField, flagField, _xlength);
-
         //std::cout<<"streamField "<<*streamField<<"  collideField "<<*collideField<<std::endl;
-
 		swap = collideField;
 		collideField = streamField;
 		streamField = swap;
         
+    
 		doCollision(collideField, flagField, &_tau, _xlength);
         
-		treatBoundary(collideField, flagField, _velocityWallX, _velocityWallY, _xlength);
+		treatBoundary(collideField, flagField, velocityWall, _xlength);
         
-
+        std::cout<<"Velocity"<<velocityWall[0]<<velocityWall[1]<<velocityWall[2]<<std::endl;
 		if (static_cast<int>(t) % static_cast<int>(_timestepsPerPlotting) == 0)
 		{
 		    writeVtkOutput(collideField, flagField, "LidDrivenCavity", t, _xlength);
@@ -461,65 +469,58 @@ void Case::simulate() {
 
 
 
-void Case::initializeFields(double* collideField, double* streamField, int* flagField, int xlength)
-{
-    unsigned long x, y;
-    //std::cout<<"xlength"<<xlength<<std::endl;
+void Case::initializeFields(double *collideField, double *streamField, int *flagField, int xlength){
+	// initialization of particle distribution func fields
+	int xlen = xlength + 2;
+	int xlen2 = xlen*xlen;
 
-    /* Loop through fluid cells, not boundary nodes */
-    for (y = 0; y <= (xlength + 1); y++)
-    {
-        for (x = 0; x <= (xlength + 1); x++)
-        {
-            const unsigned long idx = y*(xlength + 2) + x;
+	for (int a=0; a<=xlength+1; a++){
+		for (int b=0; b<=xlength+1; b++){
+			for (int c=0; c<=xlength+1; c++){
+				for (int i=0; i<Q; i++){
+					// initialize streamField and collideField arrays
+					streamField [ Q*(c*xlen2 + b*xlen + a) + i ] = LATTICEWEIGHTS [i];
+					collideField [ Q*(c*xlen2 + b*xlen + a) + i ] = LATTICEWEIGHTS [i];
+				}
+				// set all as inner points
+				flagField [ c*xlen2 + b*xlen + a ] = FLUID;
+			}
+			// if c==xlength+1, overwrite as moving wall:
+			flagField [ xlen2*(xlength+1) + b*xlen + a ] = MOVING_WALL;
+		}
+	}
+	// overwrite fluid to no-slip at other boundaries:
+	for (int k=0; k<xlen; k++){
+		for (int j=0; j<xlength+1; j++){
+			// if a||b||c==0 :
+			flagField [ j*xlen2 + k*xlen ] = NO_SLIP;
+			flagField [ j*xlen2 + k] = NO_SLIP;
+			flagField [ k*xlen +j ] = NO_SLIP;
 
-            collideField[9 * idx] = LATTICEWEIGHTS[0];    /* (0, 0) */
-            collideField[9 * idx + 1] = LATTICEWEIGHTS[1];    /* (-1, 0) */
-            collideField[9 * idx + 2] = LATTICEWEIGHTS[2];    /* (1, 0) */
-            collideField[9 * idx + 3] = LATTICEWEIGHTS[3];    /* (0, -1) */
-            collideField[9 * idx + 4] = LATTICEWEIGHTS[4];    /* (0, 1) */
-            collideField[9 * idx + 5] = LATTICEWEIGHTS[5];    /* (-1, -1) */
-            collideField[9 * idx + 6] = LATTICEWEIGHTS[6];    /* (-1, 1) */
-            collideField[9 * idx + 7] = LATTICEWEIGHTS[7];    /* (1, -1) */
-            collideField[9 * idx + 8] = LATTICEWEIGHTS[8];    /* (1, 1) */
-
-            streamField[9 * idx] = LATTICEWEIGHTS[0];    /* (0, 0) */
-            streamField[9 * idx + 1] = LATTICEWEIGHTS[1];    /* (-1, 0) */
-            streamField[9 * idx + 2] = LATTICEWEIGHTS[2];    /* (1, 0) */
-            streamField[9 * idx + 3] = LATTICEWEIGHTS[3];    /* (0, -1) */
-            streamField[9 * idx + 4] = LATTICEWEIGHTS[4];    /* (0, 1) */
-            streamField[9 * idx + 5] = LATTICEWEIGHTS[5];    /* (-1, -1) */
-            streamField[9 * idx + 6] = LATTICEWEIGHTS[6];    /* (-1, 1) */
-            streamField[9 * idx + 7] = LATTICEWEIGHTS[7];    /* (1, -1) */
-            streamField[9 * idx + 8] = LATTICEWEIGHTS[8];    /* (1, 1) */
-
-            if ((x < xlength + 1) && (x > 0) && (y < xlength + 1) && (y > 0))
-            {
-                flagField[idx] = FLUID;
-                
-            }
-            else if ((x == 0) || (y == 0) || (x == xlength + 1) || (y == xlength + 1))
-            {
-                flagField[idx] = NO_SLIP;
-                
-            }
-            else /* On the boundary */
-            {
-                flagField[idx] = MOVING_WALL;
-            }
-        }
-    }
+			// if a||b==xlength+1 :
+			flagField [ j*xlen2 + k*xlen + xlen - 1 ] = NO_SLIP;
+			flagField [ j*xlen2 + xlen2 - xlen + k ] = NO_SLIP;
+		}
+		// what remains for (if a||b==0) - case j==xlength+1:
+		flagField [ k*xlen + xlen -1 ] = NO_SLIP;
+	}
 }
 
-void Case::writeVtkOutput(const double* const collideField, const int* const flagField, const char* filename, unsigned int t, int xlength) {
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <fstream>
+
+void Case::writeVtkOutput(const double* const collideField, const int* const flagField, const char* filename, unsigned int t, int xlength)
+{
     char fn[80];
     int len = xlength + 2;
-    
     // save filename as a combination of passed filename and timestep
     sprintf(fn, "%s.%i.vtk", filename, t);
 
     std::ofstream fp(fn);
-    if (!fp) {
+    if (!fp)
+    {
         std::cerr << "Failed to open file!" << std::endl;
         return;
     }
@@ -529,16 +530,19 @@ void Case::writeVtkOutput(const double* const collideField, const int* const fla
     fp << "generated by CFD-lab course output \n";
     fp << "ASCII\n\n";
     fp << "DATASET STRUCTURED_GRID\n";
-    fp << "DIMENSIONS " << xlength << " " << xlength <<" \n";
-    fp << "POINTS " << (xlength) * (xlength) << " float\n\n";
+    fp << "DIMENSIONS " << xlength << " " << xlength << " " << xlength << " \n";
+    fp << "POINTS " << (xlength) * (xlength) * (xlength) << " float\n\n";
 
     // print lattice points
     double step = 1.0 / (xlength - 1);
-    for (double x = 0; x <= xlength - 1; x += 1) {
-        for (double y = 0; y <= xlength - 1; y += 1) {
-            
-             fp << x * step << " " << y * step << "\n";
-            
+    for (double x = 0; x <= xlength - 1; x += 1)
+    {
+        for (double y = 0; y <= xlength - 1; y += 1)
+        {
+            for (double z = 0; z <= xlength - 1; z += 1)
+            {
+                fp << x * step << " " << y * step << " " << z * step << "\n";
+            }
         }
     }
 
@@ -547,35 +551,39 @@ void Case::writeVtkOutput(const double* const collideField, const int* const fla
     const double* currentCell;
 
     // write density data
-    fp << "\nPOINT_DATA " << (xlength) * (xlength) << " \n";
+    fp << "\nPOINT_DATA " << (xlength) * (xlength) * (xlength) << " \n";
     fp << "SCALARS density float 1 \n";
     fp << "LOOKUP_TABLE default \n";
 
-    for (int x = 1; x < xlength + 1; ++x) {
-        for (int y = 1; y < xlength + 1; ++y) {
-            
-            currentCell = collideField + Q * ( y * len + x);
-            computeDensity(currentCell, &density);
-            fp << density << "\n";
-            
+    for (int x = 1; x < xlength + 1; ++x)
+    {
+        for (int y = 1; y < xlength + 1; ++y)
+        {
+            for (int z = 1; z < xlength + 1; ++z)
+            {
+                currentCell = collideField + Q * (z * len * len + y * len + x);
+                computeDensity(currentCell, &density);
+                fp << density << "\n";
+            }
         }
     }
 
     // compute velocities for all cells
     fp << "\nVECTORS velocity float\n";
 
-    for (int x = 1; x < xlength + 1; ++x) {
-        for (int y = 1; y < xlength + 1; ++y) {
-            
-            currentCell = collideField + Q * ( y * len + x);
-            computeDensity(currentCell, &density);
-            computeVelocity(currentCell, &density, vel);
-            fp << vel[0] << " " << vel[1] << "\n";
-            
+    for (int x = 1; x < xlength + 1; ++x)
+    {
+        for (int y = 1; y < xlength + 1; ++y)
+        {
+            for (int z = 1; z < xlength + 1; ++z)
+            {
+                currentCell = collideField + Q * (z * len * len + y * len + x);
+                computeDensity(currentCell, &density);
+                computeVelocity(currentCell, &density, vel);
+                fp << vel[0] << " " << vel[1] << " " << vel[2] << "\n";
+            }
         }
     }
 
-    // close the file
-    fp.close();
+    // close the file (automatically closed when 'fp' goes out of scope)
 }
-

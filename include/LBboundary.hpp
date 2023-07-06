@@ -1,1 +1,1 @@
-void treatBoundary(double *collideField, int* flagField, const double velocityWallX, const double velocityWallY, int xlength);
+void treatBoundary(double *collideField, int* flagField, const double * const wallVelocity, int xlength);

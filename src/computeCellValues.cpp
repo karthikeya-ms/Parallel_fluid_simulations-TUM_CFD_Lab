@@ -8,7 +8,7 @@ void computeDensity(const double *const currentCell, double *density){
 }
 
 void computeVelocity(const double * const currentCell, const double * const density, double *velocity){
-	double sum_of_product[2] = { 0 }; // initialize all elements to 0
+	double sum_of_product[3] = { 0 }; // initialize all elements to 0
 
 	// compute the sum of c_i*f_i for velocity
 	for (int j=0; j<D; j++){

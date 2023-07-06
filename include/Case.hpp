@@ -57,8 +57,8 @@ class Case {
     double _timestepsPerPlotting;
     int _xlength;
     double _tau; 
-    double _velocityWallX;
-    double _velocityWallY;
+    double velocityWall[3];
+   
 
 
     
