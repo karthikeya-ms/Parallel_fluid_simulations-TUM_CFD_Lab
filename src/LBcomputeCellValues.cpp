@@ -1,4 +1,4 @@
-#include "computeCellValues.hpp"
+#include "LBcomputeCellValues.hpp"
 #include "Enums.hpp"
 
 void computeDensity(const double *const currentCell, double *density){

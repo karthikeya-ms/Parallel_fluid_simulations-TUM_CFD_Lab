@@ -13,6 +13,9 @@
 #include <vector>
 #include <iomanip>
 
+#include <cstdio>
+#include <cstdlib>
+
 namespace filesystem = std::filesystem;
 
 #include <vtkCellData.h>
@@ -244,8 +247,8 @@ void Case::simulate() {
      double t = 0.0;
      int _xlength=50;
 	 double _tau=1.4;
-	 double velocityWall[3]={1.0, 0.0, 0.0};
-	 int _timesteps=50;
+	 double velocityWall[3]={0.05, 0.0, 0.0};
+	 int _timesteps=100;
 	 int _timestepsPerPlotting=2;
 
      double *collideField = nullptr;
@@ -506,10 +509,6 @@ void Case::initializeFields(double *collideField, double *streamField, int *flag
 	}
 }
 
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
 
 void Case::writeVtkOutput(const double* const collideField, const int* const flagField, const char* filename, unsigned int t, int xlength)
 {

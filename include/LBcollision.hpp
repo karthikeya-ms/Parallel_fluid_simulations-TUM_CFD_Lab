@@ -1,4 +1,4 @@
-#include "computeCellValues.hpp"
+#include "LBcomputeCellValues.hpp"
 
 /** computes the post-collision distribution functions according to the BGK update rule and
  *  stores the results again at the same position.

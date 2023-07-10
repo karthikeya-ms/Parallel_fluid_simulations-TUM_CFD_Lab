@@ -1,6 +1,6 @@
 #include "LBboundary.hpp"
 #include "Enums.hpp"
-#include "computeCellValues.hpp"
+#include "LBcomputeCellValues.hpp"
 #include "LBstreaming.hpp"
 
 void treatBoundary(double *collideField, int* flagField,

@@ -1,6 +1,6 @@
 #include "LBcollision.hpp"
 #include "Enums.hpp"
-#include "computeCellValues.hpp"
+#include "LBcomputeCellValues.hpp"
 
 
 void computePostCollisionDistributions(double *currentCell, const double * const tau, const double *const feq){
