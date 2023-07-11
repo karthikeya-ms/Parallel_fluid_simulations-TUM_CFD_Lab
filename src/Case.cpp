@@ -3,6 +3,7 @@
 #include "initLB.hpp"
 #include "LBstreaming.hpp"
 #include "LBcollision.hpp"
+#include "LBboundary.hpp"
 
 #include <algorithm>
 #include <filesystem>
