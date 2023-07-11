@@ -1,6 +1,8 @@
 #include "Case.hpp"
 #include "Enums.hpp"
 #include "initLB.hpp"
+#include "LBstreaming.hpp"
+#include "LBcollision.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -127,68 +129,80 @@ Case::Case(std::string file_name, int argn, char **args, int method) {
 
     //std::cout<<"xlength_lbm "<<velocityWall[0]<<std::endl;
 
-                                                /*LBM Initialization*/
-    double *collideField = nullptr;
-    double *streamField = nullptr;
-    int *flagField = nullptr;
+    switch(method){
 
-	// Allocating the 3 main arrays.
-	int domain_lbm = (xlength_lbm[0] + 2) * (xlength_lbm[1] + 2) * (xlength_lbm[2] + 2);
-	collideField = new double[Q_NUMBER * domain_lbm];
-    streamField = new double[Q_NUMBER * domain_lbm];
-    flagField = new int[domain_lbm];
+        case 1:
+            {
+                                                        /*LBM Initialization*/
+            // double *collideField = nullptr;
+            // double *streamField = nullptr;
+            // int *flagField = nullptr;
 
-	// Init the 3 main arrays.
-	initialiseFields( collideField, streamField, flagField, xlength_lbm, problem, initxyzXYZ);
+            // Allocating the 3 main arrays.
+            int domain_lbm = (xlength_lbm[0] + 2) * (xlength_lbm[1] + 2) * (xlength_lbm[2] + 2);
+            collideField = new double[Q_NUMBER * domain_lbm];
+            streamField = new double[Q_NUMBER * domain_lbm];
+            flagField = new int[domain_lbm];
 
-                                       /*Finite Differences initialization*/
+            // Init the 3 main arrays.
+            initialiseFields( collideField, streamField, flagField, xlength_lbm, problem, initxyzXYZ);
+        break;
+            }
 
-    std::map<int, double> wall_vel;
-    if (_geom_name.compare("NONE") == 0) {
-        wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
+
+        case 2: 
+                                                 /*Finite Differences initialization*/
+
+            std::map<int, double> wall_vel;
+            if (_geom_name.compare("NONE") == 0) {
+                wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
+            }
+
+            // Set file names for geometry file and output directory
+            set_file_names(file_name, method);
+
+            // Build up the domain
+            Domain domain;
+            domain.dx = xlength / (double)imax;
+            domain.dy = ylength / (double)jmax;
+            domain.domain_size_x = imax;
+            domain.domain_size_y = jmax;
+
+            build_domain(domain, imax, jmax);
+
+            _grid = Grid(_geom_name, domain);
+            _field = Fields(nu, dt, tau, alpha, beta, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, GX, GY, _grid, energy_eq);
+
+            _discretization = Discretization(domain.dx, domain.dy, gamma);
+            _pressure_solver = std::make_unique<SOR>(omg);
+            _max_iter = itermax;
+            _tolerance = eps;
+
+            // Construct boundaries
+            if (not _grid.moving_wall_cells().empty()) {
+                _boundaries.push_back(
+                    std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), LidDrivenCavity::wall_velocity));
+            }
+            if (not _grid.fixed_wall_cells().empty()) {
+                _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
+            }
+            if (not _grid.hot_wall_cells().empty()) {
+                _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.hot_wall_cells(), hotwall_temp));
+            }
+            if (not _grid.cold_wall_cells().empty()) {
+                _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.cold_wall_cells(), coldwall_temp));
+            }
+            if (not _grid.inflow_cells().empty()) {
+                _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(),UIN, VIN));
+            }
+            double Pout = 0.0;
+            if (not _grid.outflow_cells().empty()) {
+                _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells(),Pout));
+            }
+        break;
+
     }
-
-    // Set file names for geometry file and output directory
-    set_file_names(file_name, method);
-
-    // Build up the domain
-    Domain domain;
-    domain.dx = xlength / (double)imax;
-    domain.dy = ylength / (double)jmax;
-    domain.domain_size_x = imax;
-    domain.domain_size_y = jmax;
-
-    build_domain(domain, imax, jmax);
-
-    _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, alpha, beta, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, GX, GY, _grid, energy_eq);
-
-    _discretization = Discretization(domain.dx, domain.dy, gamma);
-    _pressure_solver = std::make_unique<SOR>(omg);
-    _max_iter = itermax;
-    _tolerance = eps;
-
-    // Construct boundaries
-    if (not _grid.moving_wall_cells().empty()) {
-        _boundaries.push_back(
-            std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), LidDrivenCavity::wall_velocity));
-    }
-    if (not _grid.fixed_wall_cells().empty()) {
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
-    }
-    if (not _grid.hot_wall_cells().empty()) {
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.hot_wall_cells(), hotwall_temp));
-    }
-    if (not _grid.cold_wall_cells().empty()) {
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.cold_wall_cells(), coldwall_temp));
-    }
-    if (not _grid.inflow_cells().empty()) {
-        _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(),UIN, VIN));
-    }
-    double Pout = 0.0;
-    if (not _grid.outflow_cells().empty()) {
-        _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells(),Pout));
-    }
+                                  
 }
 
 void Case::set_file_names(std::string file_name, int method) {
@@ -227,6 +241,7 @@ void Case::set_file_names(std::string file_name, int method) {
 
         case 2: 
         _dict_name.append("FD_");
+        break;
     }
     
     _dict_name.append(_case_name);
@@ -282,8 +297,28 @@ void Case::simulate(int method) {
 
         case 1:  //LBM Implementation
             std::cout << "Simulation started. \n";
+            for (int t = 0; t < timesteps; t++) {
+                double* swap = nullptr;
 
+                doStreaming(collideField, streamField, flagField, xlength_lbm);
 
+                swap = collideField;
+                collideField = streamField;
+                streamField = swap;
+
+                doCollision(collideField, flagField, &tau_lbm, xlength_lbm);
+
+                treatBoundary(collideField, flagField, velocityWall, xlength_lbm, &densityRef, velocityIn, &densityIn);
+
+                // if (t % timestepsPerPlotting == 0) {
+                //     std::cout << "Writing the vtk file for timestep " << t << std::endl;
+                //     writeVtkOutput(collideField, flagField, problem_path, t, xlength_lbm);
+                // }
+            }
+
+            delete[] collideField;
+            delete[] streamField;
+            delete[] flagField;
 
             std::cout << "Simulation ended. \n";
         break;

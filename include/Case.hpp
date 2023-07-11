@@ -75,6 +75,10 @@ class Case {
     int initxyzXYZ[6];
     double velocityWall[3];	     
     std::string problem;  
+    double *collideField = nullptr;
+    double *streamField = nullptr;
+    int *flagField = nullptr;
+
 
     /**
      * @brief Creating file names from given input data file
