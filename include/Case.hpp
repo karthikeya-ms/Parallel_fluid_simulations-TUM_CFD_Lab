@@ -10,7 +10,6 @@
 #include "Fields.hpp"
 #include "Grid.hpp"
 #include "PressureSolver.hpp"
-#include "Enums.hpp"
 
 /**
  * @brief Class to hold and orchestrate the simulation flow.
@@ -26,7 +25,7 @@ class Case {
      *
      * @param[in] Input file name
      */
-    Case(std::string file_name, int argn, char **args);
+    Case(std::string file_name, int argn, char **args, int method);
 
     /**
      * @brief Main function to simulate the flow until the end time.
@@ -37,7 +36,7 @@ class Case {
      * Calculates velocities
      * Outputs the solution files
      */
-    void simulate();
+    void simulate(int method);
 
   private:
     /// Plain case name without paths
@@ -52,17 +51,7 @@ class Case {
     double _t_end;
     /// Solution file outputting frequency
     double _output_freq;
-  /////////////////////////////////////////////////////////////////////////////
-    double _timesteps;
-    double _timestepsPerPlotting;
-    int _xlength;
-    double _tau; 
-    double velocityWall[3];
-   
 
-
-    
-  //////////////////////////////////////////////////////////////////////////
     Fields _field;
     Grid _grid;
     Discretization _discretization;
@@ -75,6 +64,18 @@ class Case {
     /// Maximum number of iterations for the solver
     int _max_iter;
 
+
+    int xlength_lbm[3];
+    double tau_lbm;
+    int timesteps;
+    int timestepsPerPlotting;
+    double velocityIn[3];
+    double densityIn;
+    double densityRef;
+    int initxyzXYZ[6];
+    double velocityWall[3];	     
+    std::string problem;  
+
     /**
      * @brief Creating file names from given input data file
      *
@@ -83,7 +84,7 @@ class Case {
      *
      * @param[in] input data file
      */
-    void set_file_names(std::string file_name);
+    void set_file_names(std::string file_name, int method);
 
     /**
      * @brief Solution file outputter
@@ -97,14 +98,5 @@ class Case {
     void output_vtk(int t, int my_rank = 0);
 
     void build_domain(Domain &domain, int imax_domain, int jmax_domain);
-
-    /* initialises the particle distribution functions and the flagfield */
-    void initializeFields(double *collideField, double *streamField,int *flagField, int xlength);
-
-    /** writes the density and velocity field (derived from the distributions in collideField)
- *  to a file determined by 'filename' and timestep 't'. You can re-use parts of the code
- *  from visual.c (VTK output for Navier-Stokes solver) and modify it for 3D datasets.
- */
-    void writeVtkOutput(const double * const collideField, const int * const flagField, const char * filename, unsigned int t, int xlength);
     
 };

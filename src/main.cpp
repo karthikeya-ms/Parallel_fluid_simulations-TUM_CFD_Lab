@@ -25,10 +25,14 @@ void printProgressBar( double t, double t_end ){
 int main(int argn, char **args) { //argn is the no of command line arguments and **args is the array of strings 
     if (argn > 1) {
         std::string file_name{args[1]};
-        Case problem(file_name, argn, args); //problem is an object of Case class which is created to further invoke the member functions and member variables of that class like problem.simulate in the next line
-        problem.simulate();
+        int method;
+        std::cout<<"Select one of the below methods to run your desired case: "<<std::endl;
+        std::cout<<"1. Lattice Boltzman Method"<<std::endl;
+        std::cout<<"2. Finite Difference Method - Navier Stokes"<<std::endl;
+        std::cin>>method;
+        Case problem(file_name, argn, args, method); //problem is an object of Case class which is created to further invoke the member functions and member variables of that class like problem.simulate in the next line
+        problem.simulate(method);
     
-
     } else {
         std::cout << "Error: No input file is provided to fluidchen." << std::endl;
         std::cout << "Example usage: /path/to/fluidchen /path/to/input_data.dat" << std::endl;
