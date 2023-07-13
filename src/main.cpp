@@ -22,15 +22,16 @@ void printProgressBar( double t, double t_end ){
     std::cout<< percent << "%     \r" << std::flush;
   }
 
-int main(int argn, char **args) { //argn is the no of command line arguments and **args is the array of strings 
+int main(int argn, char **args) { 
     if (argn > 1) {
         std::string file_name{args[1]};
+        std::cout<<"filename"<<file_name<<std::endl;
         int method;
-        std::cout<<"Select one of the below methods to run your desired case: "<<std::endl;
+        std::cout<<"Select one of the below methods to run your desired case (currently, LBM can run only Lid Driven Cavity): "<<std::endl;
         std::cout<<"1. Lattice Boltzman Method"<<std::endl;
         std::cout<<"2. Finite Difference Method - Navier Stokes"<<std::endl;
         std::cin>>method;
-        Case problem(file_name, argn, args, method); //problem is an object of Case class which is created to further invoke the member functions and member variables of that class like problem.simulate in the next line
+        Case problem(file_name, argn, args, method); 
         problem.simulate(method);
     
     } else {

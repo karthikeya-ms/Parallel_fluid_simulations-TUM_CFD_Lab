@@ -4,6 +4,7 @@
 #include "LBstreaming.hpp"
 #include "LBcollision.hpp"
 #include "LBboundary.hpp"
+#include "LBoutputvtk.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -100,24 +101,24 @@ Case::Case(std::string file_name, int argn, char **args, int method) {
                 if (var == "wall_temp_5") file >> coldwall_temp;
                 if (var == "wall_temp_4") file >> hotwall_temp;
 
-                /*LBM variables - declared in Case.hpp*/
-                if (var == "xlength_lbm") file >> xlength_lbm[0];
-                if (var == "ylength_lbm") file >> xlength_lbm[1];
-                if (var == "zlength_lbm") file >> xlength_lbm[2];
+                   /*LBM variables - declared in Case.hpp*/
+                if (var == "xlength_lbm") file >> xlength_lbm;
+                // if (var == "ylength_lbm") file >> xlength_lbm[1];
+                // if (var == "zlength_lbm") file >> xlength_lbm[2];
                 if (var == "tau_lbm") file >> tau_lbm;
                 if (var == "timesteps") file >> timesteps;
                 if (var == "timestepsPerPlotting") file >> timestepsPerPlotting;
-                if (var == "velocityInX") file >> velocityIn[0];
-                if (var == "velocityInY") file >> velocityIn[1];
-                if (var == "velocityInZ") file >> velocityIn[2];
-                if (var == "densityIn") file >> densityIn;
-                if (var == "densityRef") file >> densityRef;
-                if (var == "wallLeft") file >> initxyzXYZ[2];
-                if (var == "wallRight") file >> initxyzXYZ[5];
-                if (var == "wallTop") file >> initxyzXYZ[3];
-                if (var == "wallBottom") file >> initxyzXYZ[0];
-                if (var == "wallBackground") file >> initxyzXYZ[4];
-                if (var == "wallForeground") file >> initxyzXYZ[1];
+                // if (var == "velocityInX") file >> velocityIn[0];
+                // if (var == "velocityInY") file >> velocityIn[1];
+                // if (var == "velocityInZ") file >> velocityIn[2];
+                // if (var == "densityIn") file >> densityIn;
+                // if (var == "densityRef") file >> densityRef;
+                // if (var == "wallLeft") file >> initxyzXYZ[2];
+                // if (var == "wallRight") file >> initxyzXYZ[5];
+                // if (var == "wallTop") file >> initxyzXYZ[3];
+                // if (var == "wallBottom") file >> initxyzXYZ[0];
+                // if (var == "wallBackground") file >> initxyzXYZ[4];
+                // if (var == "wallForeground") file >> initxyzXYZ[1];
                 if (var == "velocityWall1") file >> velocityWall[0];
                 if (var == "velocityWall3") file >> velocityWall[1];
                 if (var == "velocityWall3") file >> velocityWall[2];
@@ -129,6 +130,11 @@ Case::Case(std::string file_name, int argn, char **args, int method) {
     file.close();
 
     //std::cout<<"xlength_lbm "<<velocityWall[0]<<std::endl;
+    // std::string problem_path;
+    // std::stringstream ss;
+    // ss << _dict_name <<"/"<< _case_name << "_";
+    // problem_path = ss.str();
+
 
     switch(method){
 
@@ -138,15 +144,21 @@ Case::Case(std::string file_name, int argn, char **args, int method) {
             // double *collideField = nullptr;
             // double *streamField = nullptr;
             // int *flagField = nullptr;
+            set_file_names(file_name, method);
+            std::string problem_path;
+            std::stringstream ss;
+            ss << _dict_name <<"/"<< _case_name << "_";
+            problem_path = ss.str();
 
             // Allocating the 3 main arrays.
-            int domain_lbm = (xlength_lbm[0] + 2) * (xlength_lbm[1] + 2) * (xlength_lbm[2] + 2);
-            collideField = new double[Q_NUMBER * domain_lbm];
-            streamField = new double[Q_NUMBER * domain_lbm];
-            flagField = new int[domain_lbm];
+            // int domain_lbm = (xlength_lbm[0] + 2) * (xlength_lbm[1] + 2) * (xlength_lbm[2] + 2);
+            // collideField = new double[Q_NUMBER * domain_lbm];
+            // streamField = new double[Q_NUMBER * domain_lbm];
+            // flagField = new int[domain_lbm];
 
             // Init the 3 main arrays.
-            initialiseFields( collideField, streamField, flagField, xlength_lbm, problem, initxyzXYZ);
+            // initialiseFields( collideField, streamField, flagField, xlength_lbm, problem, initxyzXYZ);
+            // std::cout<<"collidefield "<<*collideField<<std::endl;
         break;
             }
 
@@ -297,24 +309,41 @@ void Case::simulate(int method) {
     switch(method){
 
         case 1:  //LBM Implementation
+            {
             std::cout << "Simulation started. \n";
+
+            double *collideField = nullptr;
+            double *streamField = nullptr;
+            int *flagField = nullptr;
+            double* swap = nullptr;
+            int domain_lbm = (xlength_lbm + 2) * (xlength_lbm + 2) * (xlength_lbm + 2);
+            collideField = new double[Q_NUMBER * domain_lbm];
+            streamField = new double[Q_NUMBER * domain_lbm];
+            flagField = new int[domain_lbm];
+
+            // Init the 3 main arrays.
+            initializeFields( collideField, streamField, flagField, xlength_lbm);
             for (int t = 0; t < timesteps; t++) {
-                double* swap = nullptr;
 
                 doStreaming(collideField, streamField, flagField, xlength_lbm);
-
                 swap = collideField;
                 collideField = streamField;
                 streamField = swap;
 
                 doCollision(collideField, flagField, &tau_lbm, xlength_lbm);
 
-                treatBoundary(collideField, flagField, velocityWall, xlength_lbm, &densityRef, velocityIn, &densityIn);
+                treatBoundary(collideField, flagField, velocityWall, xlength_lbm);
 
-                // if (t % timestepsPerPlotting == 0) {
-                //     std::cout << "Writing the vtk file for timestep " << t << std::endl;
-                //     writeVtkOutput(collideField, flagField, problem_path, t, xlength_lbm);
-                // }
+                // std::cout<<"dict name "<<_dict_name<<std::endl;
+                // std::cout<<"case name "<<_case_name<<std::endl;
+
+
+                //std::cout<<"**********************End of timestep************************"<<std::endl;
+
+                if (t % timestepsPerPlotting == 0) {
+                    std::cout << "Writing the vtk file for timestep " << t << std::endl;
+                    writeVtkOutput(collideField, flagField, _case_name, t, xlength_lbm, _dict_name);
+                }
             }
 
             delete[] collideField;
@@ -322,7 +351,7 @@ void Case::simulate(int method) {
             delete[] flagField;
 
             std::cout << "Simulation ended. \n";
-        break;
+        break;}
 
         case 2: //FD-NS Implementation
             std::cout << "Simulation started. \n";
@@ -495,6 +524,7 @@ void Case::output_vtk(int timestep, int my_rank) {
     vtkSmartPointer<vtkStructuredGridWriter> writer = vtkSmartPointer<vtkStructuredGridWriter>::New();
 
     // Create Filename
+    std::cout<<"Dict name"<<_dict_name<<std::endl;
     std::string outputname =
         _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
 

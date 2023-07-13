@@ -64,8 +64,7 @@ class Case {
     /// Maximum number of iterations for the solver
     int _max_iter;
 
-
-    int xlength_lbm[3];
+    int xlength_lbm;
     double tau_lbm;
     int timesteps;
     int timestepsPerPlotting;
@@ -75,9 +74,10 @@ class Case {
     int initxyzXYZ[6];
     double velocityWall[3];	     
     std::string problem;  
-    double *collideField = nullptr;
-    double *streamField = nullptr;
-    int *flagField = nullptr;
+    // double *collideField = nullptr;
+    // double *streamField = nullptr;
+    // int *flagField = nullptr;
+    std::string problem_path;
 
 
     /**

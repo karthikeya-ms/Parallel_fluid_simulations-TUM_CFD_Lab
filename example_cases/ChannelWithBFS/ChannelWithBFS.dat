@@ -93,7 +93,7 @@ problem			          lbm_flow_over_step
 #  size of the domain             
 #---------------------------------------------------
 xlength_lbm			          30
-ylength_lbm			          3
+ylength_lbm			          30
 zlength_lbm			          50
 
 #---------------------------------------------------
@@ -105,7 +105,7 @@ tau_lbm			              0.6
 #  time steps
 #---------------------------------------------------
 timesteps			        10000
-timestepsPerPlotting	100
+timestepsPerPlotting	    100
 
 #---------------------------------------------------
 #  boundary conditions
@@ -116,7 +116,7 @@ velocityInX		        0
 velocityInY		        0
 velocityInZ		        0.05
 
-densityIn			        -1
+densityIn			   -1
 densityRef		        1
 
 #--------------------------------------------

@@ -1,4 +1,3 @@
 #include "LBDefinitions.hpp"
-#include <string>
 
-int initialiseFields(double *collideField, double *streamField, int *flagField, int *xlength, std::string problem, int *initxyzXYZ);
+void initializeFields(double *collideField, double *streamField, int *flagField, int xlength_lbm);
