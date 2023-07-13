@@ -86,8 +86,8 @@ tau_lbm			              1.5
 #---------------------------------------------------
 #  time steps
 #---------------------------------------------------
-timesteps			        200
-timestepsPerPlotting	    2
+timesteps			        500
+timestepsPerPlotting	    3
 
 #--------------------------------------------
 #              Moving wall velocity|(if any)
