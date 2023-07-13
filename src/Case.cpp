@@ -334,8 +334,7 @@ void Case::simulate(int method) {
 
                 treatBoundary(collideField, flagField, velocityWall, xlength_lbm);
 
-                // std::cout<<"dict name "<<_dict_name<<std::endl;
-                // std::cout<<"case name "<<_case_name<<std::endl;
+               
 
 
                 //std::cout<<"**********************End of timestep************************"<<std::endl;

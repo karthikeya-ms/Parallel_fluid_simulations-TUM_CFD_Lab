@@ -2,13 +2,6 @@
 
 Fluidchen is a CFD Solver developed for the CFD Lab taught at TUM Informatics, Chair of Scientific Computing in Computer Science.
 
-After forking, use this `README.md` however you want: feel free to remove anything you don't need,
-or add any additional details we should know to run the code.
-
-## Working with fluidchen
-
-You will extend this code step-by-step starting from a pure framework to a parallel CFD solver. Please follow these [instructions for work with git and submitting the assignments](docs/first-steps.md).
-
 ## Software Requirements
 
 * VTK 7 or higher
@@ -16,24 +9,19 @@ You will extend this code step-by-step starting from a pure framework to a paral
   
 Detailed information is given below.
 
-## Installing
+## Building the Code
 
 ```shell
-git clone https://gitlab.lrz.de/oguzziya/GroupX_CFDLab.git
-cd GroupX_CFDLab
+git clone -b Project git@gitlab.lrz.de:00000000014B4D55/group-d-cfd-lab.git GroupD_CFDLab_Project_Siva
+cd GroupD_CFDLab_Project_Siva
 mkdir build && cd build
 cmake ..
 make
-make install # optional, check prefix
 ```
 
-These commands will create the executable `fluidchen` and copy it to the default directory `/usr/local/bin` . If you want to install to a custom path, execute the cmake command as
+After `make` completes successfully, you will get an executable `fluidchen` in your `build` directory. Run the code from this directory. Note: Earlier versions of this documentation pointed to the option of `make install`. You may want to avoid this and directly work inside the repository while you develop the code.
 
-```shell
-cmake -DCMAKE_INSTALL_PREFIX=/path/to/directory ..
-```
-
-After `make && make install` **fluidchen** will be installed to `/path/to/directory/bin` . Note that you may need to update your `PATH` environment variable.
+## Build Options
 
 By default, **fluidchen** is installed in `DEBUG` mode. To obtain full performance, you can execute cmake as
 
@@ -50,18 +38,33 @@ cmake -DCMAKE_CXX_FLAGS="-O3" ..
 A good idea would be that you setup your computers as runners for [GitLab CI](https://docs.gitlab.com/ee/ci/)
 (see the file `.gitlab-ci.yml` here) to check the code building automatically every time you push.
 
-## Running
+## Running and Project information
 
-In order to run **Fluidchen**, the case file should be given as input parameter. Some default case files are located in the `example_cases` directory. If you installed **Fluidchen**, you can execute them from anywhere you want as
-For Serial:
+In order to run **Fluidchen**, the case file should be given as input parameter. Some default case files are located in the `example_cases` directory. 
+
+`Note:` For this project, alongside the Finite Difference method for Navier Stokes equation(FDNS), additionally, the Lattice Boltzman Method has been implemented for a 3-dimensional Lid Driven Cavity scenario. Therefore, all the case files in the `example_cases` directory can be run using the Finite Difference method where as only the 3D Lid Driven Cavity can be run using the Lattice Boltzmann Method. Readers are welcome to extend the following code of LBM to implement rest of the caseslike the Finite Difference solver. To run the Lid Driven Cavity case, navigate to the `build/` directory and run:
 
 ```shell
-fluidchen /path/to/fluidchen/example_cases/LidDrivenCavity/LidDrivenCavity.dat
+./fluidchen ../example_cases/LidDrivenCavity/LidDrivenCavity.dat
 ```
+Upon running the above command in your shell, you would be asked to chose between two methods: 
 
-This will run the case file and create the output folder `/path/to/case/case_name_Output` which holds the `.vtk` files of the solution. The output folder is created in the same location as your case file. Note that this may require write permissions in the given directory.
+1. Lattice Boltzman Method
+2. Finite Difference Method - Navier Stokes
+
+Enter the number corresponding to the `method` (1 for LBM and 2 for FD) and hit `Enter` to start executing your case using the chosen method.
+This will run the case file and create the output folder `../example_cases/LidDrivenCavity/method_LidDrivenCavity_Output` which holds the `.vtk` files of the solution. The output folder is created in the same location as your case file. Note that this may require write permissions in the given directory.
 
 If input file does not contain a geometry file, fluidchen will run lid-driven cavity case with given parameters.
+
+`Note:`Lattice Boltzmann Method works for velocities much smaller than the speed of sound. In our case, we have fixed the speed of sound to be 1/sqrt(3) = 0.577 (check LBDefinitions.hpp). Therefore, the speed of the moving wall should be much lower than this and I have chosen it to be 0.1
+
+## Cases with special obstacles or boundary conditions - only for Finite Difference Method
+An extra parameter with name "geo_file" needs to be provided to handle cases with obstacles or heated walls or cold walls or adiabatic walls. If no geo_file parameter is provided in the .dat file, the LidDriven Cavity with the parameters in the .dat file would be run automatically.
+
+The user should maintain consistency between the .pgm file with obstacles clearly defined and should have the same number of discretizations in all directions in the .dat. The user should ensure that they use the same numbering in .pgm and in .dat file. For example, if adiabatic wall has number 4 in .pgm file, they should ensure that the adiabatic wall is wall_temp_5 in .dat file. If the pgm file has 80 points in x and 20 points in y, they should ensure that imax is 78 and jmax is 18 in .dat file(2 ghost cells in both directions).
+
+It is upto the user to ensure there are no forbidden cells in the .pgm file. i.e., no obstacle cells should have more than 2 neighboring fluid cells. The script checks for that and exits throwing an error in case there are more than 2 neighboring fluid cells for an obstacle cell or if there is a fluid cell in the ghost layer as we're not dealing with periodic conditions as of now.
 
 ### GCC version
 
@@ -200,6 +203,12 @@ export CXX=`which g++-7`
 
 Make sure to use a backtick (\`) to get the `which` command executed. Afterwards, you can run `cmake ..`.
 
+## Sample Results from the LBM simulation of the Lid Driven Cavity case
 
-### Lid Driven Cavity Simulation   
-The results of the lid driven cavity simulations can be found in [Solution.md](https://gitlab.lrz.de/00000000014ADC3D/cfd-lab-group-mib/-/blob/Development/Solutions.md) file.
+![](Velocity_streamlines_LBM.png)
+
+Velocity streamlines at t=150 on the midplane of the 3D Lid Driven Cavity case run using the LBM solver
+
+![](3D_Streamlines_LBM.png)
+
+3D streamlines originating from bottom corner of the 3D domain with point-velocity contours for the LBM implementation
