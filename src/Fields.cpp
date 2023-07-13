@@ -1,162 +1,133 @@
 #include "Fields.hpp"
 
+#include<cmath>
 #include <algorithm>
 #include <iostream>
-#include <cmath>
 
-Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI)
-    : _nu(nu), _dt(dt), _tau(tau) {
-    _U = Matrix<double>(imax + 2, jmax + 2, UI);
-    _V = Matrix<double>(imax + 2, jmax + 2, VI);
-    _P = Matrix<double>(imax + 2, jmax + 2, PI);
+Fields::Fields(double nu, double dt, double tau, double alpha, double beta, int imax, int jmax, double UI, double VI, double PI, double TI, double GX, double GY, Grid &grid, std::string energy_eq)
+    : _nu(nu), _dt(dt), _tau(tau), _alpha(alpha), _beta(beta), _energy_eq(energy_eq) {
+    // intializing u, v and p
+    _U = Matrix<double>(imax + 2, jmax + 2, 0.0);
+    _V = Matrix<double>(imax + 2, jmax + 2, 0.0);
+    _P = Matrix<double>(imax + 2, jmax + 2, 0.0);
+    _T = Matrix<double>(imax + 2, jmax + 2, 0.0);
 
     _F = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _G = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _RS = Matrix<double>(imax + 2, jmax + 2, 0.0);
+
+    _gx = GX;
+    _gy = GY;
+
+    for(auto &currentCell: grid.fluid_cells()){
+        int i = currentCell->i();
+        int j = currentCell->j();
+        setu(i,j,UI);
+        setv(i,j,VI);
+        setp(i,j,PI);
+        if(_energy_eq == "on"){
+            setT(i,j,TI);
+        }
+    }
+    if(_energy_eq == "on"){
+        for(auto &currentCell: grid.inflow_cells()){
+            setT(currentCell->i(),currentCell->j(),TI);
+        }
+    }
+}//end of Fields constructor
+
+void Fields::calculate_fluxes(Grid &grid) {
+
+    for(auto &currentCell: grid.fluid_cells()){
+        int i = currentCell->i();
+        int j = currentCell->j();
+        if(i != grid.imax()){   //excluding imax as f_imax is part of the fixed boundary and set as 0.0
+            setf(i,j,u(i,j)+dt()*(_nu*(Discretization::diffusion(_U, i, j))-Discretization::convection_u(_U, _V, i, j) - 0.5*_beta*_gx*(T(i,j)+T(i+1,j)) ));
+        }
+        if(j != grid.jmax()){   // excluding jmax as g_jmax is part of the moving boundary and set as 0.0
+            setg(i,j,v(i,j)+dt()*(_nu*(Discretization::diffusion(_V, i, j))-Discretization::convection_v(_U, _V, i, j) - 0.5*_beta*_gy*(T(i,j)+T(i,j+1)) ));
+        }
+    }
 }
 
-//Added: Function implemented for second task.
-void Fields::calculate_fluxes(Grid &grid, double gamma) {
-	
-	int i_idx{0};
-	int j_idx{0};
-	
-
-	for (int i_idx = 1; i_idx < grid.imax()-1; i_idx++){
-		for (int j_idx = 1; j_idx < grid.jmax(); j_idx++){
-			f(i_idx, j_idx) = u(i_idx, j_idx) + _dt*(_nu*(d2udx2(i_idx, j_idx, grid) + d2udy2(i_idx, j_idx, grid)) - du2dx(i_idx, j_idx, gamma, grid) - duvdy(i_idx, j_idx, gamma, grid) + _gx);	
-			
-		}
-	}
-
-	for (int i_idx = 1; i_idx < grid.imax(); i_idx++){
-		for (int j_idx = 1; j_idx < grid.jmax()-1; j_idx++){
-			
-			g(i_idx, j_idx) = v(i_idx, j_idx) + _dt*(_nu*(d2vdx2(i_idx, j_idx, grid) + d2vdy2(i_idx, j_idx, grid)) - dv2dy(i_idx, j_idx, gamma, grid) - duvdx(i_idx, j_idx, gamma, grid) + _gy);
-		}
-	}
-
-}
-
-//Added: Function implemented for third task.
 void Fields::calculate_rs(Grid &grid) {
-
-	int i_idx{0};
-	int j_idx{0};
-
-	for (int i_idx = 1; i_idx < grid.imax(); i_idx++){
-		for (int j_idx = 1; j_idx < grid.jmax(); j_idx++){
-			rs(i_idx, j_idx) = ((f(i_idx, j_idx) - f(i_idx - 1, j_idx))/grid.dx() + (g(i_idx, j_idx) - g(i_idx, j_idx - 1))/grid.dy())/_dt;
-		}
-	}
-
+    for(auto &currentCell: grid.fluid_cells()){
+        int i = currentCell->i();
+        int j = currentCell->j();
+        // calculating the rhs of pressure equation
+        double val = ((f(i,j)-f(i-1,j))/grid.dx() + (g(i,j)-g(i,j-1))/grid.dy())/dt();
+        setrs(i, j, val);        
+    }
 }
 
-//Added: Function implemented for sixth task.
 void Fields::calculate_velocities(Grid &grid) {
-
-	for (int i_idx = 1; i_idx < grid.imax()-1; i_idx++){
-		for (int j_idx = 1; j_idx < grid.jmax(); j_idx++){
-			u(i_idx, j_idx) = f(i_idx, j_idx) - _dt*dpdx(i_idx, j_idx, grid);
-			
-		}
-	}
-	for (int i_idx = 1; i_idx < grid.imax(); i_idx++){
-		for (int j_idx = 1; j_idx < grid.jmax()-1; j_idx++){
-			
-			v(i_idx, j_idx) = g(i_idx, j_idx) - _dt*dpdy(i_idx, j_idx, grid);
-		}
-	}
+    for(auto &currentCell: grid.fluid_cells()){
+        int i = currentCell->i();
+        int j = currentCell->j();
+        if(i != grid.imax()){   //excluding imax as u_imax is part of the fixed boundary and set as 0.0
+            setu(i, j, f(i,j) - _dt/grid.dx()*(p(i+1,j)-p(i,j)));
+        }
+        if(j != grid.jmax()){   // excluding jmax as v_jmax is part of the moving boundary (in x direction) and set as 0.0
+            setv(i, j, g(i,j) - _dt/grid.dy()*(p(i,j+1)-p(i,j)));       
+        }
+    }
 }
 
-//Added: Function implemented for seventh task.
+//calculating temperature at new timestep
+void Fields::calculate_Temperature(Grid &grid){
+    Matrix<double> tempT = _T;
+    for(auto &currentCell: grid.fluid_cells()){
+        int i = currentCell->i();
+        int j = currentCell->j();
+        tempT(i,j) = _T(i,j) + _dt*(_alpha * (Discretization::diffusion(_T,i,j)) - Discretization::convection_T(_T,_U,_V,i,j));
+    }
+    _T = tempT;
+}
+
+//calculating the timestep keeping in mind the stability crtiteria
 double Fields::calculate_dt(Grid &grid) { 
-
-	//Search for the absolute maximums of both U and V matrices.
-	std::vector<double> vector_umax;
-	std::vector<double> vector_vmax;
-	for (auto i_idx = 0; i_idx < _U.size(); i_idx++){
-		std::vector<double> row_u = _U.get_row(i_idx);
-		std::vector<double> row_v = _V.get_row(i_idx);
-		
-		for(auto j_idx = 0; j_idx < row_u.size(); j_idx++){
-		row_u[j_idx] = abs(row_u[j_idx]);
-		row_v[j_idx] = abs(row_v[j_idx]);
-		}
-		
-		vector_umax.push_back(*std::max_element(std::begin(row_u), std::end(row_u)));
-		vector_vmax.push_back(*std::max_element(std::begin(row_v), std::end(row_v)));
-	}
-	double umax = *std::max_element(begin(vector_umax), end(vector_umax));
-	double vmax = *std::max_element(begin(vector_vmax), end(vector_vmax));
-	
-         double _dta = std::min(grid.dx()/umax, grid.dy()/vmax);
-         double _dtb = pow((1/pow(grid.dx(), 2.0) + 1/pow(grid.dy(), 2.0)), -1.0)/(2*_nu);
-	_dt = _tau*std::min(_dta, _dtb);
-	return _dt; 
+    double dt;
+    if((_nu < _alpha) && (_energy_eq != "on")){
+        dt = 0.5/_alpha/(1/grid.dx()/grid.dx() + 1/grid.dy()/grid.dy())*_tau;
+    }else{
+        dt = 0.5/_nu/(1/grid.dx()/grid.dx() + 1/grid.dy()/grid.dy())*_tau;
+    }
+    
+    for(auto &currentCell: grid.fluid_cells()){
+        int i = currentCell->i();
+        int j = currentCell->j();
+        double dt1 = std::abs(grid.dx()/u(i,j))*_tau;
+        double dt2 = std::abs(grid.dy()/v(i,j))*_tau;
+        if(dt > dt1){  
+            dt = dt1;
+        }
+        if(dt > dt2){  
+            dt = dt2;
+        }
+    }
+    _dt = dt;
+    return dt; 
 }
 
+// get functions
 double &Fields::p(int i, int j) { return _P(i, j); }
 double &Fields::u(int i, int j) { return _U(i, j); }
 double &Fields::v(int i, int j) { return _V(i, j); }
 double &Fields::f(int i, int j) { return _F(i, j); }
 double &Fields::g(int i, int j) { return _G(i, j); }
 double &Fields::rs(int i, int j) { return _RS(i, j); }
+double &Fields::T(int i, int j) { return _T(i, j); }
+std::string &Fields::Energy() { return _energy_eq; }
 
 Matrix<double> &Fields::p_matrix() { return _P; }
 
 double Fields::dt() const { return _dt; }
 
-
-//Added: Implementation of helper functions containing derivative terms to reduce cluttering in flux calculations for second task.
-double Fields::d2udx2(int i_idx, int j_idx, Grid &grid){
-
-	return (u(i_idx + 1, j_idx) - 2*u(i_idx, j_idx) + u(i_idx - 1, j_idx))/(pow(grid.dx(), 2.0));
-}
-
-double Fields::d2udy2(int i_idx, int j_idx, Grid &grid){
-
-	return (u(i_idx, j_idx + 1) - 2*u(i_idx, j_idx) + u(i_idx, j_idx - 1))/pow(grid.dy(), 2.0);
-}
-
-double Fields::du2dx(int i_idx, int j_idx, double gamma, Grid &grid){
-
-	return (1/grid.dx())*(pow((u(i_idx, j_idx) + u(i_idx + 1, j_idx))/2.0, 2.0) - pow((u(i_idx - 1, j_idx) + u(i_idx, j_idx))/2.0, 2.0)) + (gamma/grid.dx())*(abs(u(i_idx, j_idx) + u(i_idx + 1, j_idx))/2.0 * (u(i_idx, j_idx) - u(i_idx + 1, j_idx))/2.0 - abs(u(i_idx - 1, j_idx) + u(i_idx, j_idx))/2.0 *(u(i_idx - 1, j_idx) - u(i_idx, j_idx))/2.0);
-}
-
-double Fields::duvdy(int i_idx, int j_idx, double gamma, Grid &grid){
-
- 	return (1/grid.dy())*((v(i_idx, j_idx) + v(i_idx + 1, j_idx))/2.0 * (u(i_idx, j_idx) + u(i_idx, j_idx + 1))/2.0 - (v(i_idx, j_idx - 1) + v(i_idx + 1, j_idx - 1))/2.0 * (u(i_idx, j_idx - 1) + u(i_idx, j_idx))/2.0) +
-(gamma/grid.dy())*(abs(v(i_idx,j_idx) + v(i_idx + 1, j_idx))/2.0 * (u(i_idx, j_idx) - u(i_idx, j_idx + 1))/2.0 - abs(v(i_idx, j_idx - 1) + v(i_idx + 1, j_idx - 1))/2 * (u(i_idx, j_idx - 1) - u(i_idx, j_idx))/2.0);
-}
-
-double Fields::duvdx(int i_idx, int j_idx, double gamma, Grid &grid){
-
-	return (1/grid.dx())*((u(i_idx,j_idx) + u(i_idx, j_idx + 1))/2.0 * (v(i_idx, j_idx) + v(i_idx + 1, j_idx))/2.0 - (u(i_idx - 1,j_idx) + u(i_idx - 1, j_idx + 1))/2.0 * (v(i_idx - 1, j_idx) + v(i_idx, j_idx))/2.0) +
-(gamma/grid.dy())*(abs(v(i_idx,j_idx) + v(i_idx + 1, j_idx))/2.0 * (u(i_idx, j_idx)-u(i_idx, j_idx + 1))/2.0 - abs(v(i_idx,j_idx - 1) + v(i_idx + 1, j_idx - 1))/2.0 * (u(i_idx, j_idx - 1) - u(i_idx, j_idx))/2.0);
-}
-
-double Fields::dv2dy(int i_idx, int j_idx, double gamma, Grid &grid){
-
-	return (1/grid.dy())*(pow((v(i_idx, j_idx) + v(i_idx, j_idx + 1))/2.0, 2.0) - pow((v(i_idx, j_idx - 1) + v(i_idx, j_idx))/2.0, 2.0)) + (gamma/grid.dy())*((abs(v(i_idx, j_idx) + v(i_idx, j_idx + 1))/2.0 * (v(i_idx, j_idx) - v(i_idx, j_idx + 1))/2.0) - (abs(v(i_idx, j_idx - 1) + v(i_idx, j_idx))/2.0 * (v(i_idx, j_idx - 1) - v(i_idx,j_idx))/2.0));
-}
-
-double Fields::d2vdx2(int i_idx, int j_idx, Grid &grid){
-
-	return (v(i_idx + 1, j_idx) - 2*v(i_idx, j_idx) + v(i_idx - 1, j_idx))/pow(grid.dx(), 2.0);
-}
-
-double Fields::d2vdy2(int i_idx, int j_idx, Grid &grid){
-
-	return (v(i_idx, j_idx + 1) - 2*v(i_idx, j_idx) + v(i_idx, j_idx - 1))/pow(grid.dy(), 2.0);
-}
-
-double Fields::dpdx(int i_idx, int j_idx, Grid &grid){
-
-	return (p(i_idx + 1, j_idx) - p(i_idx, j_idx))/grid.dx();
-}
-
-double Fields::dpdy(int i_idx, int j_idx, Grid &grid){
-
-	return (p(i_idx, j_idx + 1) - p(i_idx, j_idx))/grid.dy();
-}
+// set functions
+void Fields::setp(int i, int j, double val) { _P(i, j) = val; }
+void Fields::setT(int i, int j, double val) { _T(i, j) = val; }
+void Fields::setu(int i, int j, double val) { _U(i, j) = val; }
+void Fields::setv(int i, int j, double val) { _V(i, j) = val; }
+void Fields::setf(int i, int j, double val) { _F(i, j) = val; }
+void Fields::setg(int i, int j, double val) { _G(i, j) = val; }
+void Fields::setrs(int i, int j, double val) { _RS(i, j) = val; }

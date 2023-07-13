@@ -4,7 +4,7 @@ For your development we ask you to use Git (a version control system) and the Gi
 
 1. [Fork](#fork) (only once, one repository per group, let us know which repository we should look at, if more than one)
 2. [Rename and make it private](#2-rename-and-make-it-private)
-3. [Invite us as developers](#3-invite-us-as-developers) (@ga83dit, @muehlhaeusser, @QingSun79)
+3. [Invite us as developers](#3-invite-us-as-developers) (@gchourdakis, @ga83dit)
 4. [Clone it](#4-clone-it)
 5. [Work on it](#5-work-on-it)
 6. [Create a merge request to `master` when ready](#6-create-a-merge-request-to-master-when-ready)
@@ -103,10 +103,10 @@ git checkout ws1 # or another branch
 git merge calculate_uv
 ```
 
-Even better, instead of merging the branch directly, you may [open a Merge Request on GitLab](https://docs.gitlab.com/ee/user/project/merge_requests/) and discuss it with your team before merging.
+Even better, instead of merging the branch directly, you may [open a Merge Request on GitLab](https://docs.gitlab.com/ee/gitlab-basics/add-merge-request.html) and discuss it with your team before merging.
 
 [Read more about branching](https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell).
 
 ## 6. Create a merge request to `master` when ready
 
-[Open a Merge Request from your `ws1` into your `master`](https://docs.gitlab.com/ee/user/project/merge_requests/) when your submission is ready. We will then review this merge request. After the review session on the worksheet you can apply suggestions from the review and merge the solution into `master`.
+[Open a Merge Request from your `ws1` into your `master`](https://docs.gitlab.com/ee/gitlab-basics/add-merge-request.html) when your submission is ready. We will then review this merge request. After the review session on the worksheet you can apply suggestions from the review and merge the solution into `master`.

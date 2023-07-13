@@ -25,7 +25,7 @@ class Case {
      *
      * @param[in] Input file name
      */
-    Case(std::string file_name, int argn, char **args);
+    Case(std::string file_name, int argn, char **args, int method);
 
     /**
      * @brief Main function to simulate the flow until the end time.
@@ -36,18 +36,17 @@ class Case {
      * Calculates velocities
      * Outputs the solution files
      */
-    void simulate();
+    void simulate(int method);
 
   private:
     /// Plain case name without paths
     std::string _case_name;
-    /// Output directory name
+    /// Output directiory name
     std::string _dict_name;
     /// Geometry file name
     std::string _geom_name{"NONE"};
     /// Relative input file path
     std::string _prefix;
-
     /// Simulation time
     double _t_end;
     /// Solution file outputting frequency
@@ -65,6 +64,22 @@ class Case {
     /// Maximum number of iterations for the solver
     int _max_iter;
 
+    int xlength_lbm;
+    double tau_lbm;
+    int timesteps;
+    int timestepsPerPlotting;
+    double velocityIn[3];
+    double densityIn;
+    double densityRef;
+    int initxyzXYZ[6];
+    double velocityWall[3];	     
+    std::string problem;  
+    // double *collideField = nullptr;
+    // double *streamField = nullptr;
+    // int *flagField = nullptr;
+    std::string problem_path;
+
+
     /**
      * @brief Creating file names from given input data file
      *
@@ -73,7 +88,7 @@ class Case {
      *
      * @param[in] input data file
      */
-    void set_file_names(std::string file_name);
+    void set_file_names(std::string file_name, int method);
 
     /**
      * @brief Solution file outputter
@@ -87,4 +102,5 @@ class Case {
     void output_vtk(int t, int my_rank = 0);
 
     void build_domain(Domain &domain, int imax_domain, int jmax_domain);
+    
 };

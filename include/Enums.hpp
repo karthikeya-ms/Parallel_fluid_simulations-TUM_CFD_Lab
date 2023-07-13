@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 
 // If no geometry file is provided in the input file, lid driven cavity case
 // will run by default. In the Grid.cpp, geometry will be created following
@@ -25,8 +26,12 @@ const int RIGHT = 3;
 } // namespace border
 
 enum class cell_type {
-
     FLUID,
+    INFLOW,
+    OUTFLOW,
+    ADIABATIC_WALL,
+    HOT_WALL,
+    COLD_WALL,
     FIXED_WALL,
     MOVING_WALL,
     DEFAULT

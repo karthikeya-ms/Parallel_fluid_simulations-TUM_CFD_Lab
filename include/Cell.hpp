@@ -34,14 +34,14 @@ class Cell {
     Cell(int i, int j, cell_type type, int id);
 
     /**
-     * @brief Neighbour getter for given border position
+     * @brief Neighbour getter for given border positon
      *
      * @param[in] border position
      * @param[out] pointer to the neighboring cell
      */
     const Cell *neighbour(border_position position) const;
     /**
-     * @brief Neighbour setter for given border position
+     * @brief Neighbour setter for given border positon
      *
      * @param[in] border position
      */
@@ -96,6 +96,6 @@ class Cell {
     /// Vector of border positions that holds existing borders
     std::vector<border_position> _borders;
     /// Pointers to neighbours. // TOP -  BOTTOM - LEFT - RIGHT - NORTHWEST -
-    /// SOUTHEAST
+    /// SOUTEAST
     std::array<Cell *, 6> _neighbours;
 };
