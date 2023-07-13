@@ -66,47 +66,7 @@ The user should maintain consistency between the .pgm file with obstacles clearl
 
 It is upto the user to ensure there are no forbidden cells in the .pgm file. i.e., no obstacle cells should have more than 2 neighboring fluid cells. The script checks for that and exits throwing an error in case there are more than 2 neighboring fluid cells for an obstacle cell or if there is a fluid cell in the ghost layer as we're not dealing with periodic conditions as of now.
 
-### GCC version
 
-You can get you current version of GCC by running:
-
-```shell
-g++ -v
-```
-
-### Defining your GCC version
-
-If you have GCC 9 or newer, you can set in the `CMakeLists.txt` file:
-
-```cmake
-set(gpp9 True)
-```
-
-If you have a version lower than 9, then you don't have to modify the `CMakeLists.txt` file.
-
-This will affect how we are using the C++ filesystem library, which is available already in GCC 7 as an experimental feature.
-
-### Setup of VTK and GCC 9 (Ubuntu **20.04**)
-
-```shell
-apt-get update &&
-apt-get upgrade -y &&
-apt-get install -y build-essential cmake libvtk7-dev libfmt-dev openmpi-bin libopenmpi-dev
-```
-
-### Setup of VTK and GCC 9 (Ubuntu **18.04**)
-
-If you want, you can upgrade your compiler version to have access to more recent C++ features.
-This is, however, optional.
-
-```shell
-apt-get update &&
-apt-get install -y software-properties-common &&
-add-apt-repository -y ppa:ubuntu-toolchain-r/test &&
-apt-get upgrade -y &&
-apt-get install -y build-essential cmake libvtk7-dev libfmt-dev gcc-9 g++-9 
-apt-get install -y gcc-9 g++-9 openmpi-bin libopenmpi-dev
-```
 
 ### Dependencies for macOS
 
@@ -172,17 +132,6 @@ docker run -i -p 80:80 -v <path> name
 ```
 should be run in terminal. Container is generated in container sections in Docker application. 
 Code can be run by using that generated container.
-
-## Using CMake
-
-CMake is a C++ build system generator, which simplifies the building process compared e.g. to a system-specific Makefile. The CMake configuration is defined in the `CMakeList.txt` file.
-
-In order to build your code with CMake, you can follow this (quite common) procedure:
-
-1. Create a build directory: `mkdir build`
-2. Get inside it: `cd build`
-3. Configure and generate the build system: `cmake ..` (Note the two dots, this means that the `CmakeLists.txt` File is in the folder above)
-4. Build your code: `make` (build the executable)
 
 ### Troubleshooting: VTK not found
 
