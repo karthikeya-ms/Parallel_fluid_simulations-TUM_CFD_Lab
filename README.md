@@ -38,7 +38,7 @@ cmake -DCMAKE_CXX_FLAGS="-O3" ..
 A good idea would be that you setup your computers as runners for [GitLab CI](https://docs.gitlab.com/ee/ci/)
 (see the file `.gitlab-ci.yml` here) to check the code building automatically every time you push.
 
-## Running and Project information
+## Running the code
 
 In order to run **Fluidchen**, the case file should be given as input parameter. Some default case files are located in the `example_cases` directory. 
 
@@ -49,8 +49,8 @@ In order to run **Fluidchen**, the case file should be given as input parameter.
 ```
 Upon running the above command in your shell, you would be asked to chose between two methods: 
 
-1. Lattice Boltzman Method
-2. Finite Difference Method - Navier Stokes
+`1. Lattice Boltzman Method`
+`2. Finite Difference Method - Navier Stokes`
 
 Enter the number corresponding to the `method` (1 for LBM and 2 for FD) and hit `Enter` to start executing your case using the chosen method.
 This will run the case file and create the output folder `../example_cases/LidDrivenCavity/method_LidDrivenCavity_Output` which holds the `.vtk` files of the solution. The output folder is created in the same location as your case file. Note that this may require write permissions in the given directory.
@@ -142,15 +142,6 @@ You might run into a problem where the VTK library is not found. To fix this, yo
 3. Start in a clean build folder
 4. Run `cmake ..` again
 
-### Set a different GCC version
-
-If you have multiple compiler versions installed you can set the GCC version which should be used by `cmake` like this:
-
-```shell
-export CXX=`which g++-7`
-```
-
-Make sure to use a backtick (\`) to get the `which` command executed. Afterwards, you can run `cmake ..`.
 
 ## Sample Results from the LBM simulation of the Lid Driven Cavity case
 
